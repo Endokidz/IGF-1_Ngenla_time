@@ -1,0 +1,426 @@
+import React, { useState, useEffect } from 'react';
+
+const IGF1Calculator = () => {
+  // State variables
+  const [inputMethod, setInputMethod] = useState('hours');
+  const [hoursSinceInjection, setHoursSinceInjection] = useState('');
+  
+  // Date and time picker states
+  const [injectionDate, setInjectionDate] = useState('');
+  const [injectionTime, setInjectionTime] = useState('');
+  const [measurementDate, setMeasurementDate] = useState('');
+  const [measurementTime, setMeasurementTime] = useState('');
+  
+  const [measurementUnit, setMeasurementUnit] = useState('ngml');
+  const [measuredValue, setMeasuredValue] = useState('');
+  const [result, setResult] = useState(null);
+  const [error, setError] = useState('');
+  
+  // Adjustment table based on the image
+  const adjustments = [
+    { interval: '>0 - 12 hours', sdsAdjustment: 1.8, ngmlMultiplier: 2.0 },
+    { interval: '>12 - 24 hours', sdsAdjustment: 0.7, ngmlMultiplier: 1.3 },
+    { interval: '>24 - 36 hours', sdsAdjustment: -0.1, ngmlMultiplier: 1.0 },
+    { interval: '>36 - 48 hours', sdsAdjustment: -0.5, ngmlMultiplier: 0.8 },
+    { interval: '>48 - 60 hours', sdsAdjustment: -0.7, ngmlMultiplier: 0.8 },
+    { interval: '>60 - 72 hours', sdsAdjustment: -0.7, ngmlMultiplier: 0.8 },
+    { interval: '>72 - 84 hours', sdsAdjustment: -0.6, ngmlMultiplier: 0.8 },
+    { interval: '>84 - 96 hours', sdsAdjustment: -0.3, ngmlMultiplier: 0.9 },
+    { interval: '>96 - 108 hours', sdsAdjustment: 0, ngmlMultiplier: 1.0 }, // No adjustment
+    { interval: '>108 - 120 hours', sdsAdjustment: 0.4, ngmlMultiplier: 1.1 },
+    { interval: '>120 - 132 hours', sdsAdjustment: 0.7, ngmlMultiplier: 1.3 },
+    { interval: '>132 - 144 hours', sdsAdjustment: 1.1, ngmlMultiplier: 1.5 },
+    { interval: '>144 - 156 hours', sdsAdjustment: 1.4, ngmlMultiplier: 1.7 },
+    { interval: '>156 - <168 hours', sdsAdjustment: 1.6, ngmlMultiplier: 1.9 }
+  ];
+
+  // Create date from separate date and time inputs
+  const createDateFromInputs = (dateStr, timeStr) => {
+    try {
+      if (!dateStr) {
+        throw new Error('Date is required');
+      }
+      
+      // Parse the date string (YYYY-MM-DD format from date input)
+      const date = new Date(dateStr);
+      
+      // If time is provided, add it to the date
+      if (timeStr) {
+        const [hours, minutes] = timeStr.split(':').map(Number);
+        date.setHours(hours, minutes);
+      } else {
+        // Default to start of day if no time provided
+        date.setHours(0, 0, 0, 0);
+      }
+      
+      if (isNaN(date.getTime())) {
+        throw new Error('Invalid date or time');
+      }
+      
+      return date;
+    } catch (error) {
+      throw new Error('Please select a valid date and time');
+    }
+  };
+
+  // Calculate hours between two dates
+  const calculateHoursBetween = (startDate, endDate) => {
+    const diffMs = endDate - startDate;
+    return diffMs / (1000 * 60 * 60); // Convert to hours
+  };
+
+  // Get adjustment factors based on hours
+  const getAdjustmentFactors = (hours) => {
+    if (hours <= 0 || hours >= 168) {
+      throw new Error('Time interval must be between 0 and 168 hours');
+    }
+    
+    for (const adjustment of adjustments) {
+      const intervalStr = adjustment.interval;
+      const [lowerStr, upperStr] = intervalStr.replace('>', '').split(' - ');
+      const lowerHours = parseFloat(lowerStr);
+      const upperHours = parseFloat(upperStr.replace('<', ''));
+      
+      if (hours > lowerHours && hours <= upperHours) {
+        return {
+          sdsAdjustment: adjustment.sdsAdjustment,
+          ngmlMultiplier: adjustment.ngmlMultiplier
+        };
+      }
+    }
+    
+    throw new Error('Unable to find adjustment factors for the given time interval');
+  };
+
+  // Calculate adjusted IGF-1 value
+  const calculateAdjustedIGF1 = () => {
+    try {
+      setError('');
+      let hours = 0;
+      
+      if (inputMethod === 'hours') {
+        hours = parseFloat(hoursSinceInjection);
+        if (isNaN(hours)) {
+          throw new Error('Please enter a valid number of hours');
+        }
+      } else {
+        // Calculate hours from date and time components
+        if (!injectionDate || !measurementDate) {
+          throw new Error('Please select both injection and measurement dates');
+        }
+        
+        const injDate = createDateFromInputs(injectionDate, injectionTime);
+        const measDate = createDateFromInputs(measurementDate, measurementTime);
+        
+        if (measDate <= injDate) {
+          throw new Error('Measurement time must be after injection time');
+        }
+        
+        hours = calculateHoursBetween(injDate, measDate);
+      }
+      
+      // Get adjustment factors
+      const { sdsAdjustment, ngmlMultiplier } = getAdjustmentFactors(hours);
+      
+      // Calculate adjusted value
+      const measuredVal = parseFloat(measuredValue);
+      if (isNaN(measuredVal)) {
+        throw new Error('Please enter a valid measured value');
+      }
+      
+      let adjustedValue = 0;
+      if (measurementUnit === 'ngml') {
+        if (measuredVal < 0) {
+          throw new Error('ng/mL values must be positive');
+        }
+        adjustedValue = measuredVal * ngmlMultiplier;
+      } else {
+        // SDS units can be negative
+        adjustedValue = measuredVal + sdsAdjustment;
+      }
+      
+      setResult({
+        measuredValue: measuredVal,
+        adjustedValue: adjustedValue.toFixed(2),
+        hours: hours.toFixed(1),
+        unit: measurementUnit === 'ngml' ? 'ng/mL' : 'SDS',
+        adjustmentFactor: measurementUnit === 'ngml' ? 
+          `× ${ngmlMultiplier}` : 
+          `${sdsAdjustment >= 0 ? '+' : ''}${sdsAdjustment}`
+      });
+      
+    } catch (error) {
+      setError(error.message);
+      setResult(null);
+    }
+  };
+
+  // Format date for display in input field
+  const formatDateForInput = (date) => {
+    if (!date) return '';
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    
+    return `${day}/${month}/${year} ${hours}:${minutes}`;
+  };
+
+  // Reset form
+  const handleReset = () => {
+    setHoursSinceInjection('');
+    setInjectionDate('');
+    setInjectionTime('');
+    setMeasurementDate('');
+    setMeasurementTime('');
+    setMeasuredValue('');
+    setResult(null);
+    setError('');
+  };
+
+  return (
+    <div className="max-w-2xl mx-auto p-6 bg-white rounded-lg shadow-md">
+      <h1 className="text-2xl font-bold text-blue-800 mb-6">IGF-1 Measurement Adjustment Calculator</h1>
+      
+      <div className="mb-6">
+        <p className="text-sm text-gray-600 mb-2">
+          Note: Day 4 sampling (96-108 hours) is recommended for optimal measurement accuracy.
+        </p>
+        <div className="p-3 bg-blue-50 border border-blue-200 rounded-md text-xs text-gray-700">
+          <p className="font-semibold">Disclaimer:</p>
+          <p>This tool is for healthcare professional use only. No patient data is stored. 
+             Always use clinical judgment when interpreting adjusted values.</p>
+        </div>
+      </div>
+
+      <div className="mb-4">
+        <label className="block text-gray-700 font-medium mb-2">Input Method</label>
+        <div className="flex gap-4">
+          <label className="flex items-center">
+            <input
+              type="radio"
+              className="mr-2"
+              checked={inputMethod === 'hours'}
+              onChange={() => setInputMethod('hours')}
+            />
+            Hours since injection
+          </label>
+          <label className="flex items-center">
+            <input
+              type="radio"
+              className="mr-2"
+              checked={inputMethod === 'datetime'}
+              onChange={() => setInputMethod('datetime')}
+            />
+            Date/Time
+          </label>
+        </div>
+      </div>
+
+      {inputMethod === 'hours' ? (
+        <div className="mb-4">
+          <label htmlFor="hours" className="block text-gray-700 font-medium mb-2">
+            Hours since injection
+          </label>
+          <input
+            id="hours"
+            type="number"
+            className="w-full p-2 border rounded-md"
+            value={hoursSinceInjection}
+            onChange={(e) => setHoursSinceInjection(e.target.value)}
+            placeholder="Enter hours (1-168)"
+            min="1"
+            max="168"
+          />
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          <div>
+            <label htmlFor="injection-date" className="block text-gray-700 font-medium mb-2">
+              Injection Date
+            </label>
+            <input
+              id="injection-date"
+              type="date"
+              className="w-full p-2 border rounded-md mb-2"
+              value={injectionDate}
+              onChange={(e) => setInjectionDate(e.target.value)}
+            />
+            <label htmlFor="injection-time" className="block text-gray-700 font-medium mb-2">
+              Injection Time
+            </label>
+            <input
+              id="injection-time"
+              type="time"
+              className="w-full p-2 border rounded-md"
+              value={injectionTime}
+              onChange={(e) => setInjectionTime(e.target.value)}
+            />
+          </div>
+          <div>
+            <label htmlFor="measurement-date" className="block text-gray-700 font-medium mb-2">
+              Measurement Date
+            </label>
+            <input
+              id="measurement-date"
+              type="date"
+              className="w-full p-2 border rounded-md mb-2"
+              value={measurementDate}
+              onChange={(e) => setMeasurementDate(e.target.value)}
+            />
+            <label htmlFor="measurement-time" className="block text-gray-700 font-medium mb-2">
+              Measurement Time
+            </label>
+            <input
+              id="measurement-time"
+              type="time"
+              className="w-full p-2 border rounded-md"
+              value={measurementTime}
+              onChange={(e) => setMeasurementTime(e.target.value)}
+            />
+          </div>
+        </div>
+      )}
+
+      <div className="mb-4">
+        <label className="block text-gray-700 font-medium mb-2">Measurement Unit</label>
+        <div className="flex gap-4">
+          <label className="flex items-center">
+            <input
+              type="radio"
+              className="mr-2"
+              checked={measurementUnit === 'ngml'}
+              onChange={() => setMeasurementUnit('ngml')}
+            />
+            ng/mL
+          </label>
+          <label className="flex items-center">
+            <input
+              type="radio"
+              className="mr-2"
+              checked={measurementUnit === 'sds'}
+              onChange={() => setMeasurementUnit('sds')}
+            />
+            SDS
+          </label>
+        </div>
+      </div>
+
+      <div className="mb-6">
+        <label htmlFor="measured-value" className="block text-gray-700 font-medium mb-2">
+          Measured IGF-1 Value ({measurementUnit === 'ngml' ? 'ng/mL' : 'SDS'})
+        </label>
+        <div className="flex items-center">
+          {measurementUnit === 'sds' && (
+            <button
+              type="button"
+              className="px-3 py-2 bg-gray-200 text-gray-700 rounded-l-md border border-r-0 border-gray-300"
+              onClick={() => setMeasuredValue(prev => prev.startsWith('-') ? prev.substring(1) : `-${prev}`)}
+            >
+              +/-
+            </button>
+          )}
+          <input
+            id="measured-value"
+            type="text"
+            inputMode="decimal"
+            pattern={measurementUnit === 'ngml' ? "[0-9]*.?[0-9]*" : "-?[0-9]*.?[0-9]*"}
+            className={`w-full p-2 border rounded-md ${measurementUnit === 'sds' ? 'rounded-l-none' : ''}`}
+            value={measuredValue}
+            onChange={(e) => {
+              const val = e.target.value;
+              // Allow empty string, negative sign, or valid decimal numbers
+              if (val === '' || val === '-' || 
+                  (measurementUnit === 'sds' && /^-?\d*\.?\d*$/.test(val)) ||
+                  (measurementUnit === 'ngml' && /^\d*\.?\d*$/.test(val))) {
+                setMeasuredValue(val);
+              }
+            }}
+            placeholder={`Enter measured value ${measurementUnit === 'ngml' ? '(positive only)' : ''}`}
+          />
+        </div>
+      </div>
+
+      <div className="flex gap-4 mb-6">
+        <button
+          onClick={calculateAdjustedIGF1}
+          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+        >
+          Calculate
+        </button>
+        <button
+          onClick={handleReset}
+          className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300"
+        >
+          Reset
+        </button>
+      </div>
+
+      {error && (
+        <div className="p-3 mb-6 bg-red-50 border border-red-200 rounded-md text-red-700">
+          {error}
+        </div>
+      )}
+
+      {result && (
+        <div className="p-4 bg-green-50 border border-green-200 rounded-md">
+          <h2 className="text-lg font-semibold text-green-800 mb-2">Results</h2>
+          <div className="grid grid-cols-2 gap-2">
+            <div className="text-gray-600">Time after injection:</div>
+            <div className="font-medium">{result.hours} hours</div>
+            
+            <div className="text-gray-600">Measured IGF-1:</div>
+            <div className="font-medium">{result.measuredValue} {result.unit}</div>
+            
+            <div className="text-gray-600">Adjustment factor:</div>
+            <div className="font-medium">{result.adjustmentFactor}</div>
+            
+            <div className="text-gray-600">Adjusted IGF-1:</div>
+            <div className="font-bold text-green-700">{result.adjustedValue} {result.unit}</div>
+          </div>
+          
+          {result.hours > 96 && result.hours <= 108 && (
+            <div className="mt-3 text-sm text-blue-600">
+              Note: This measurement is within the optimal 96-108 hour range (Day 4 sampling).
+            </div>
+          )}
+        </div>
+      )}
+
+      <div className="mt-8">
+        <h3 className="font-semibold mb-2">Reference Adjustment Table</h3>
+        <div className="overflow-x-auto">
+          <table className="min-w-full border-collapse border border-gray-300 text-sm">
+            <thead>
+              <tr className="bg-gray-100">
+                <th className="p-2 border">Interval (hours)</th>
+                <th className="p-2 border">IGF-1 SDS Adjustment</th>
+                <th className="p-2 border">IGF-1 (ng/mL) Multiplier</th>
+              </tr>
+            </thead>
+            <tbody>
+              {adjustments.map((adj, index) => (
+                <tr key={index} className={index === 8 ? "bg-blue-50" : ""}>
+                  <td className="p-2 border">{adj.interval}</td>
+                  <td className="p-2 border">
+                    {adj.sdsAdjustment === 0 
+                      ? "No Adjustment" 
+                      : `${adj.sdsAdjustment >= 0 ? '+' : ''}${adj.sdsAdjustment}`}
+                  </td>
+                  <td className="p-2 border">
+                    {adj.ngmlMultiplier === 1.0 
+                      ? "No Adjustment" 
+                      : `×${adj.ngmlMultiplier}`}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default IGF1Calculator;
