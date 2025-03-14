@@ -1,5 +1,19 @@
-import React, { useState, useEffect } from 'react';
 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>IGF-1 Measurement Adjustment Calculator</title>
+        <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+          <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+            <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+              <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+              </head>
+              <body>
+                <div id="root"></div>
+                  
+                    <script type="text/babel"></script>
 const IGF1Calculator = () => {
   // State variables
   const [inputMethod, setInputMethod] = useState('hours');
@@ -424,3 +438,5 @@ const IGF1Calculator = () => {
 };
 
 export default IGF1Calculator;
+javascript
+ReactDOM.render(<IGF1Calculator />, document.getElementById('root'));
