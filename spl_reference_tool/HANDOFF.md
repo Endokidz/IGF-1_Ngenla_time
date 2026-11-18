@@ -12,20 +12,24 @@
 
 | Group | Items |
 |---|---|
-| Tier 1 | Soydan 2012 (22902017), which **blocks** the n-weighted Tanner model; Schonfeld 1942 pp. 760-777 (only p. 759 was received) |
+| Tier 1 | Schonfeld 1942 pp. 760-777 (only p. 759 was received) |
 | Tier 2 | Boas 2006 (16382001); Saleh 2018 (30411390); Tomova 2015 (25781529), to be checked for overlap with Tomova 2010; Romano-Riquer 2007 (17439530); Feldman 1975 (1113226) |
 | Addendum | 24145175; 21682766; 38761403; 28082769. Titles are unknown: no addendum section exists in DOWNLOAD_LIST.md. |
 | Figures | Wang 2018 Fig 1; Bhat 2015 Fig 3; Puri 2017 Fig 4a; Jaiswal 2019 Fig 1 |
 | Manuscripts | Avril 2023 (36724045) for P2; Chen 2015 (25894960) for P2; Mancini 2021 (34283215) for P3 |
 
-**Already received; do not re-extract.** Tomova 2010, Gabrich 2007, Ishii 2014, De Win 2026, Fok 2005, and Schonfeld p. 759. Uploads are matched by md5: repeat uploads of Ishii and Fok were byte-identical.
+**Already received; do not re-extract.** Soydan 2012, Tomova 2010, Gabrich 2007, Ishii 2014, De Win 2026, Fok 2005, and Schonfeld p. 759. Uploads are matched by md5: repeat uploads of Ishii and Fok were byte-identical.
 
 **Open tasks, in order:**
 
 1. Process new PDFs as they arrive, following "Rules for each PDF" below.
-2. **Tanner model.** When Soydan arrives, convert the Tanner model to n-weighted random effects.
-   - `build_model.py` only uses the n-weighted branch when *all* rows for a stage have n. Sotos and Jaiswal have none.
-   - Decide a rule: either pool only the rows with n and show the rest, or impute. Propose the rule to the author before applying it.
+2. **Tanner model: still provisional, now an author decision.** Soydan 2012 did NOT unblock it (see Batch 3).
+   - No study with known n reports SPL by Marshall-Tanner *genital* stage. The only such data come from Sotos and Jaiswal, and neither gives n.
+   - The large n-known staged data are all **pubic-hair** staged: Soydan PH1-5 (n = 1,539), De Win (flagged) and possibly Gabrich.
+   - Options to put to the author:
+     - (a) add a pubic-hair-stage reference, which needs a new app input; or
+     - (b) keep the genital-stage reference provisional; or
+     - (c) map Soydan's testis-volume classes to genital stages. This is not recommended: it conflates two different scales.
 3. **P1 manuscript text is STALE** since Fok 2005 was added (see Batch 2). Once Boas, Romano-Riquer and Feldman are in:
    - re-run `code/analysis.py`, `code/within_country.py` and `code/fig_within_country.py`;
    - update every hard-coded number in `manuscript_P1_newborn_SPL_meta.md` against `data/results.json`;
@@ -90,6 +94,20 @@ This file lets a fresh session pick up the work from where it stopped.
   - WPR subgroup: n goes from 766 to 5,394.
 - **The P1 manuscript text is now STALE.** About 40 hard-coded numbers no longer match `results.json`. Update the text in one pass once Boas 2006, Romano-Riquer 2007 and Feldman 1975 arrive. Also remove Fok from the 'not retrievable' list on line 11.
 - The duplicate uploads of Ishii 2014 (×2) and Fok 2005 (×2) are byte-identical.
+
+## Batch 3 (2026-11-18): Soydan 2012 (22902017), full text
+
+- **Table 1 is not Marshall–Tanner genital staging.** Its "genital stage" is a testis-volume class: 1-3.9, 4-11.9, 12-20 and >20 mL are stages 1-4.
+  - Stored as `stratum_type=testis_volume_class`. The fixed regex excludes these rows from the genital model.
+- **Table 2 is Tanner–Marshall pubic hair (PH1-5),** stored with `tanner_system` = pubic hair. It is not pooled into the genital model.
+- **Totals.** Each stratum's mean and SD are computed exactly by combining its per-age cells. This reproduces every published total mean, and also the reported −2.5 SD row.
+  - The printed SEs are slightly inconsistent; for example, the 12-20 mL class prints 0.04 where the cells give 0.049.
+- **Age rows.** Three rows were added to `age_extraction.csv` (13, 14 and 15 y; n = 52, 1,329 and 158), each combining that age's cells across strata.
+  - The footnote's age-specific "−2 SD" limits (5.4, 6.4 and 7.5 cm) are about 1 cm lower than the table data imply (6.4, 7.3 and 8.4). The cause is unexplained; this is noted, not acted on.
+- Technique: from the symphysis pubis (fat pad implied depressed). The degree of stretch is not stated.
+- Sample: selected, non-obese, healthy military-school applicants.
+- The abstract-only rows (labelled "13-15 y") stay excluded.
+- **Model now:** 91 rows from 25 studies, n = 20,220, tau_log = 0.136. k_local at 12-15 y is now 4.
 
 ## Next task: add the papers the user supplies
 
