@@ -317,7 +317,7 @@ def main():
     T = rows[rows["mean"].notna() & rows["sd"].notna() & rows.tanner_stage.notna()].copy()
     if "tanner_system" in T:
         ts = T.tanner_system.fillna("").astype(str)
-        g = T[ts.str.contains("G|genital", case=False) | ts.eq("") | ts.eq("nan")]
+        g = T[ts.str.contains(r"^\s*(?:genital|G\b)", case=False, regex=True) | ts.eq("") | ts.eq("nan")]
         T = g if len(g) else T
     tanner = {}
     for st in range(1, 6):

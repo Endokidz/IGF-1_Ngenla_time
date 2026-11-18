@@ -25,6 +25,22 @@ This file lets a fresh session pick up the work from where it stopped.
   - Tanner stages are pooled provisionally with equal weights.
 - **Digitiser:** `digitizer/digitize.py`, validated in `digitizer/README.md`. Point error is 0.02 cm; bin means are within 0.12 cm; curves are within 0.006 cm.
 
+
+## Batch 1 (2026-11-18): received and processed
+
+| File | Status |
+|---|---|
+| Tomova 2010 (21135345) | Table extracted (20 rows, n = 310 each). **Flagged, not pooled**: the fat pad is not depressed (pubopenile skin junction). This is pending the author's decision; if pooled, tau_log rises from 0.135 to 0.150. Kumanov 2007 is excluded as a duplicate of its 0-y stratum. |
+| Gabrich 2007 (17676248) | Tabela 2 has 19 age rows, with n from Tabela 1. Tabela 3 gives Tanner 2-5, but the staging system is not stated, so these rows are excluded from the genital model by the fixed regex. The second-hand quotes stay excluded. |
+| Ishii 2014 (25471079) | 10 LMS rows, one per raw age band, with n from Table 1. The birth row is excluded (newborn; overlaps Matsuo 2014). |
+| De Win 2026 (43023809), the "Gunter 2026" of the download list | Table 1 healthy controls by **pubic-hair** stage. Flagged: implausible SDs, fat pad not depressed. Fig. 2E is not digitised. |
+| Schonfeld 1942 | The upload contains only p. 759 (title page and references), with no data. The remaining pages (760-777) are still needed. |
+
+- **Model now:** 87 rows from 23 studies, n = 14,053, tau_log = 0.135.
+- **k_local** rises by 1-2 at every age; ages 9-17 y now have 3 studies, or 2 at 17 y.
+- **Tanner model:** still provisional. Soydan 2012 has not been received. Gunter/De Win is pubic-hair staged. Gabrich's staging system is unspecified, and Sotos and Jaiswal give no n.
+- **Code fix:** in `build_model.py`, the Tanner-system filter `contains("G|genital", case=False)` matched any letter "g". It is now anchored to `^(genital|G\b)`.
+
 ## Next task: add the papers the user supplies
 
 The user has the missing PDFs. These are the PMIDs in `DOWNLOAD_LIST.md` and its addendum:
