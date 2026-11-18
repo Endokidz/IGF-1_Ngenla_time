@@ -71,6 +71,14 @@ details { background: var(--card); border: 1px solid var(--rule); border-radius:
 summary { cursor: pointer; font-weight: 600 }
 details p, details li { font-size: .9rem; color: var(--ink-2); max-width: 80ch }
 .empty { color: var(--ink-3); font-size: .9rem }
+.sds { display: grid; gap: 4px }
+.sds svg { width: 100%; height: auto; max-width: 100% }
+.sds svg text { font-size: 10.5px }
+.sds .lg { font-size: .78rem; color: var(--ink-3) }
+td.z-crit { background: var(--crit-soft); color: var(--crit); font-weight: 600 }
+td.z-warn { background: var(--warn-soft); color: var(--warn); font-weight: 600 }
+td.z-ok { color: var(--ok) }
+td.z-info { background: var(--accent-soft); color: var(--accent); font-weight: 600 }
 @media (prefers-reduced-motion: no-preference) { .stat .v { transition: color .2s } }
 </style>
 
@@ -159,6 +167,34 @@ details p, details li { font-size: .9rem; color: var(--ink-2); max-width: 80ch }
     if (z > 2) return '<span class="chip info">Above +2 SD</span>';
     return '<span class="chip ok">Within ±2 SD</span>';
   }
+  function zClass(z) { if (z == null || !isFinite(z)) return ""; if (z < -2.5) return "z-crit"; if (z < -2) return "z-warn"; if (z > 2) return "z-info"; return "z-ok"; }
+
+  // SDS colour scale: banded by clinical meaning; markers carry text labels so colour is never the only cue
+  function sdsBar(main, mainLabel, range, second, secondLabel, studyZs) {
+    const W = 600, x0 = 18, x1 = W - 18, zmin = -4, zmax = 4, top = 38, h = 16;
+    const X = (z) => x0 + (Math.max(zmin, Math.min(zmax, z)) - zmin) / (zmax - zmin) * (x1 - x0);
+    const seg = (a, b, col) => `<rect x="${X(a)}" y="${top}" width="${X(b) - X(a)}" height="${h}" fill="var(${col})"/>`;
+    let g = seg(-4, -2.5, "--crit-soft") + seg(-2.5, -2, "--warn-soft") + seg(-2, 2, "--ok-soft") + seg(2, 4, "--accent-soft");
+    g += `<rect x="${x0}" y="${top}" width="${x1 - x0}" height="${h}" fill="none" stroke="var(--rule)"/>`;
+    [["Micropenis range", -3.25, "--crit"], ["Low", -2.25, "--warn"], ["Normal", 0, "--ok"], ["High", 3, "--accent"]].forEach(([t, z, c]) =>
+      g += `<text x="${X(z)}" y="${top - 18}" text-anchor="middle" style="fill:var(${c});font-weight:600">${t}</text>`);
+    [-4, -3, -2.5, -2, -1, 0, 1, 2, 3, 4].forEach((z) => g += `<line x1="${X(z)}" x2="${X(z)}" y1="${top + h}" y2="${top + h + 4}" stroke="var(--ink-3)"/><text x="${X(z)}" y="${top + h + 15}" text-anchor="middle">${z === 0 ? "0" : (z > 0 ? "+" : "−") + Math.abs(z)}</text>`);
+    (studyZs || []).forEach((z) => { if (isFinite(z)) g += `<line x1="${X(z)}" x2="${X(z)}" y1="${top + 2}" y2="${top + h - 2}" stroke="var(--ink-2)" stroke-width="1.2" opacity=".55"/>`; });
+    if (range && isFinite(range[0]) && isFinite(range[1])) {
+      const a = X(range[0]), b = X(range[1]);
+      g += `<line x1="${a}" x2="${b}" y1="${top + h + 22}" y2="${top + h + 22}" stroke="var(--ink)" stroke-width="2"/><line x1="${a}" x2="${a}" y1="${top + h + 18}" y2="${top + h + 26}" stroke="var(--ink)" stroke-width="2"/><line x1="${b}" x2="${b}" y1="${top + h + 18}" y2="${top + h + 26}" stroke="var(--ink)" stroke-width="2"/>`;
+    }
+    const marker = (z, lab, col, dy) => {
+      if (z == null || !isFinite(z)) return "";
+      const cx = X(z), out = z < zmin ? "◀ " : z > zmax ? " ▶" : "";
+      return `<path d="M${cx - 7},${top - 1 + dy} L${cx + 7},${top - 1 + dy} L${cx},${top + 10 + dy} Z" fill="var(${col})" stroke="var(--card)" stroke-width="1.5"/>` +
+        `<text x="${Math.min(W - 40, Math.max(40, cx))}" y="${top + h + 40 + (dy ? 13 : 0)}" text-anchor="middle" style="fill:var(--ink);font-weight:600">${out}${lab} ${fz(z)}</text>`;
+    };
+    g += marker(main, mainLabel, "--pt", 0) + marker(second, secondLabel, "--accent", 0);
+    const H = top + h + 64;
+    return `<div class="sds"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="SDS scale: ${esc(mainLabel)} ${fz(main)}">${g}</svg>
+      <span class="lg">▼ this child · bracket = range across plausible populations · grey ticks = this child's z against each published study</span></div>`;
+  }
   const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 
   // ---- inputs -----------------------------------------------------------
@@ -213,6 +249,8 @@ details p, details li { font-size: .9rem; color: var(--ink-2); max-width: 80ch }
         <div class="stat"><span class="k">Centile</span><span class="v">${fpct(primary.z)}</span><span class="s">percent of boys measure shorter</span></div>
         <div class="stat"><span class="k">Reference mean ± SD</span><span class="v">${fmt(primary.mean)} <small>± ${fmt(primary.sd)}</small></span><span class="s">−2.5 SD = ${fmt(primary.cut)} cm</span></div>
       </div>`;
+      h += sdsBar(primary.z, A ? "Age" : "Tanner", A ? [A.zLo, A.zHi] : (T && T.zLo != null ? [T.zLo, T.zHi] : null),
+        A && T ? T.z : null, "Tanner", rows.filter((r) => r.z != null && (r.tanner == null) === !!A).map((r) => r.z));
     }
     if (A) {
       h += `<div class="refblock"><h3>Pooled age reference · ${esc(ageTxt)}</h3>
@@ -256,8 +294,8 @@ details p, details li { font-size: .9rem; color: var(--ink-2); max-width: 80ch }
         <td>${esc(r.tanner != null ? "G" + r.tanner + (r.age_label ? " · " + r.age_label : "") : r.age_label)}</td>
         <td class="num">${r.n ?? "–"}</td>
         <td class="num">${fmt(r.mean)} ± ${r.sd != null ? fmt(r.sd) : "–"}<span class="sub">${esc(r.derivation)}</span></td>
-        <td class="num">${fz(r.z)}</td>
-        <td class="num">${fpct(r.z)}</td>
+        <td class="num ${zClass(r.z)}">${fz(r.z)}</td>
+        <td class="num ${zClass(r.z)}">${fpct(r.z)}</td>
         <td>${esc(r.fatpad)}<span class="sub">${esc((r.technique || "").slice(0, 90))}${(r.technique || "").length > 90 ? "…" : ""}</span></td></tr>`;
     }).join("");
   }
