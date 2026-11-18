@@ -65,7 +65,9 @@ table { border-collapse: collapse; width: 100%; font-size: .86rem }
 th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--rule); vertical-align: top }
 th { font-size: .74rem; letter-spacing: .05em; text-transform: uppercase; color: var(--ink-3); font-weight: 600; white-space: nowrap }
 td.num { font-family: var(--f-num); font-variant-numeric: tabular-nums; white-space: nowrap }
-td .sub { color: var(--ink-3); font-size: .78rem; display: block }
+td .sub { color: var(--ink-3); font-size: .78rem; display: block; white-space: normal; font-family: var(--f-ui); min-width: 9ch }
+td.study { min-width: 14ch; max-width: 26ch }
+td.num .sub { max-width: 22ch }
 a { color: var(--accent) }
 details { background: var(--card); border: 1px solid var(--rule); border-radius: 10px; padding: 12px 18px }
 summary { cursor: pointer; font-weight: 600 }
@@ -127,7 +129,7 @@ td.z-info { background: var(--accent-soft); color: var(--accent); font-weight: 6
   <section class="panel">
     <h2>Study by study</h2>
     <p class="note">These are all the published reference rows covering this age, and this stage where one is entered. Each gives its own mean ± SD, z-score and percentile. Rows flagged ⚠ had a pre-specified measurement concern.</p>
-    <div class="tablebox"><table id="tbl"><thead><tr><th>Study</th><th>Country</th><th>Age / stage</th><th>n</th><th>Mean ± SD (cm)</th><th>z</th><th>Centile</th><th>Technique</th></tr></thead><tbody></tbody></table></div>
+    <div class="tablebox"><table id="tbl"><thead><tr><th>Study</th><th>z</th><th>Centile</th><th>Mean ± SD (cm)</th><th>Age / stage</th><th>n</th><th>Country</th><th>Technique</th></tr></thead><tbody></tbody></table></div>
   </section>
 
   <details>
@@ -152,6 +154,7 @@ td.z-info { background: var(--accent-soft); color: var(--accent); font-weight: 6
     return s * y;
   }
   const Phi = (z) => 0.5 * (1 + erf(z / Math.SQRT2));
+  function lmsZ(x, lms) { const [L, M, S] = lms; return Math.abs(L) < 1e-6 ? Math.log(x / M) / S : (Math.pow(x / M, L) - 1) / (L * S); }
   function interp(arr, age) {
     const a = C.age; if (age <= a[0]) return arr[0]; if (age >= a[a.length - 1]) return arr[arr.length - 1];
     const i = Math.min(a.length - 2, Math.floor((age - a[0]) / (a[1] - a[0])));
@@ -215,7 +218,8 @@ td.z-info { background: var(--accent-soft); color: var(--accent); font-weight: 6
     const mean = interp(C.mean, age), sd = interp(C.sd, age);
     const plo = interp(C.pop_mean_pi_lo, age), phi = interp(C.pop_mean_pi_hi, age);
     const z = (spl - mean) / sd;
-    return { mean, sd, z, cut: mean - 2.5 * sd, zLo: (spl - phi) / sd, zHi: (spl - plo) / sd, plo, phi };
+    const kl = C.k_local ? C.k_local[Math.min(C.k_local.length - 1, Math.round(age / (C.age[1] - C.age[0])))] : null;
+    return { mean, sd, z, cut: mean - 2.5 * sd, zLo: (spl - phi) / sd, zHi: (spl - plo) / sd, plo, phi, kLocal: kl };
   }
   function pooledTanner(stage, spl) {
     const t = M.tanner_model["G" + stage]; if (!t) return null;
@@ -229,7 +233,7 @@ td.z-info { background: var(--accent-soft); color: var(--accent); font-weight: 6
       const inAge = age >= r.age_lo - tol && age <= r.age_hi + tol;
       if (r.tanner != null) return stage != null && r.tanner === stage && (r.age_lo == null || inAge || r.kind === "tanner");
       return inAge;
-    }).map((r) => Object.assign({}, r, { z: r.sd ? (spl - r.mean) / r.sd : null }))
+    }).map((r) => Object.assign({}, r, { z: r.lms ? lmsZ(spl, r.lms) : (r.sd ? (spl - r.mean) / r.sd : null) }))
       .sort((a, b) => (a.tanner != null) - (b.tanner != null) || (a.region || "").localeCompare(b.region || "") || a.mean - b.mean);
   }
 
@@ -273,6 +277,7 @@ td.z-info { background: var(--accent-soft); color: var(--accent); font-weight: 6
     const al = [];
     const zMin = primary ? primary.z : null;
     if (zMin != null && zMin < -2) al.push(`<div class="alert ${zMin < -2.5 ? "crit" : ""}">At the −2.5 SD threshold a single measurement is unreliable. With realistic measurement error, about two-thirds of single-measurement "micropenis" labels are wrong. Confirm with a second trained examiner before you investigate.</div>`);
+    if (A && A.kLocal != null && A.kLocal <= 2) al.push(`<div class="alert">Sparse data: at this age the pooled curve rests on ${A.kLocal} stud${A.kLocal === 1 ? "y" : "ies"}. Weigh the study-by-study rows below as heavily as the pooled value.</div>`);
     if (!I.fat) al.push('<div class="alert">Fat-pad depression is not confirmed. If the ruler was not pressed to the pubic bone, the length is underestimated, often by several millimetres in a child with obesity. Re-measure before you interpret.</div>');
     if (I.obese) al.push('<div class="alert">BMI ≥ 95th centile: buried penis is a leading cause of unconfirmed micropenis referrals. Compare the length with the fat pad fully depressed and not depressed.</div>');
     if (I.early && I.age <= 28 / 365.25) al.push('<div class="alert">Newborn measured in the first 24 h. Lengths at 1–12 h are 0.22–0.34 cm shorter than at 1–7 days (Matsuo 2014). Re-measure after 24 h.</div>');
@@ -290,13 +295,13 @@ td.z-info { background: var(--accent-soft); color: var(--accent); font-weight: 6
       const link = r.doi ? `https://doi.org/${encodeURI(r.doi)}` : (r.pmid ? `https://pubmed.ncbi.nlm.nih.gov/${encodeURIComponent(r.pmid)}/` : null);
       const name = esc(r.author || r.study) + (r.year ? " " + r.year : "");
       return `<tr>
-        <td>${link ? `<a href="${link}" target="_blank" rel="noopener">${name}</a>` : name}${r.concern ? " ⚠" : ""}<span class="sub">${esc(r.source)}</span></td>
-        <td>${esc(r.country)}<span class="sub">${esc(r.region)}</span></td>
-        <td>${esc(r.tanner != null ? "G" + r.tanner + (r.age_label ? " · " + r.age_label : "") : r.age_label)}</td>
-        <td class="num">${r.n ?? "–"}</td>
-        <td class="num">${fmt(r.mean)} ± ${r.sd != null ? fmt(r.sd) : "–"}<span class="sub">${esc(r.derivation)}</span></td>
+        <td class="study">${link ? `<a href="${link}" target="_blank" rel="noopener">${name}</a>` : name}${r.concern ? ` <span title="${esc(r.note || "Measurement concern")}">⚠</span>` : ""}<span class="sub">${esc(r.source)}${r.concern && r.note ? " · " + esc(r.note) : ""}</span></td>
         <td class="num ${zClass(r.z)}">${fz(r.z)}</td>
         <td class="num ${zClass(r.z)}">${fpct(r.z)}</td>
+        <td class="num">${fmt(r.mean)} ± ${r.sd != null ? fmt(r.sd) : "–"}<span class="sub">${r.lms ? "LMS from published SD lines · skew-correct z" : esc(r.derivation)}</span></td>
+        <td>${esc(r.tanner != null ? "G" + r.tanner + (r.age_label ? " · " + r.age_label : "") : r.age_label)}</td>
+        <td class="num">${r.n ?? "–"}</td>
+        <td>${esc(r.country)}<span class="sub">${esc(r.region)}</span></td>
         <td>${esc(r.fatpad)}<span class="sub">${esc((r.technique || "").slice(0, 90))}${(r.technique || "").length > 90 ? "…" : ""}</span></td></tr>`;
     }).join("");
   }
@@ -346,7 +351,10 @@ td.z-info { background: var(--accent-soft); color: var(--accent); font-weight: 6
         Medians with IQR or range were converted with the Luo (2018) and Wan (2014) methods, and LMS parameters with SD ≈ M·S. Each row shows its derivation.</p>
       <p><strong>Pooled age model.</strong> Random-effects meta-regression of ln(mean) on a natural cubic spline of ln(age + 0.25) (REML, Knapp–Hartung), and of ln(SD) on the same basis.
         Between-study spread of means: τ = ${fmt(am.tau_log, 3)} on the log scale, about ${fmt(100 * am.tau_log, 0)}% of the mean. This spread is why a z-score range is shown alongside the point estimate.</p>
-      <p><strong>Tanner model.</strong> Random-effects pooled ln(mean) and ln(SD) for each genital stage.</p>
+      <p><strong>Skewness.</strong> Where a study published smoothed −2 to +2 SD lines, an LMS triplet was fitted to them, so that study's z-score is skew-correct (shown as "z from LMS").</p>
+      <p><strong>Curation.</strong> Rows were excluded when the data were second-hand quotations, duplicated another report, were pooled across ages, or were probably non-stretched length. Rows with a measurement concern are shown with ⚠ and the reason, but they are not pooled.</p>
+      <p><strong>Data density.</strong> Beyond infancy the pooled curve rests on few studies: 2–3 between 2 and 15 years, and 1 above 16 years. Between 4 and 12 years the two main studies disagree on spread (coefficient of variation 10–15% vs 17–20%), so the pooled SD lies between them. Large references requested from full texts (Tomova 2010, Gabrich 2007, Soydan 2012) will be added when available.</p>
+      <p><strong>Tanner model.</strong> Random-effects pooled ln(mean) and ln(SD) for each genital stage. Where n per stage was not reported, an equal-weight average is used and labelled provisional.</p>
       <p><strong>Limitations.</strong></p>
       <ul>
         <li>Published populations differ as much in their mean as children differ within a population, and most of that difference is local method rather than ancestry. A technique-matched local reference, where one exists, is preferable.</li>

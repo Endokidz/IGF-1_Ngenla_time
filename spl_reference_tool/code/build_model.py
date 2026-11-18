@@ -64,6 +64,8 @@ def to_mean_sd(r):
             med = r.get("p50_cm") if pd.notna(r.get("p50_cm")) else r.get("median_cm")
             m = mean if pd.notna(mean) else (med if pd.notna(med) else (lo + hi) / 2)
             return m, (hi - lo) / (2 * ZP[p]), f"SD from P{p}-P{100 - p} (normal)"
+    if pd.notna(r.get("zline_sd")) and pd.notna(r.get("lms_M")):
+        return r["lms_M"], r["zline_sd"], "LMS fitted to published -2..+2 SD lines (median M; SD from -1/+1 lines)"
     if pd.notna(r.get("lms_M")) and pd.notna(r.get("lms_S")):
         M, S = r["lms_M"], r["lms_S"]
         return M, M * S, "LMS: mean~M, SD~M*S"
@@ -80,6 +82,46 @@ def to_mean_sd(r):
         except Exception:
             pass
     return (mean if pd.notna(mean) else np.nan), np.nan, "no SD derivable"
+
+
+ZLINE = re.compile(r"z-scores\s*-2/-1/0/\+1/\+2\s*=\s*([\d.]+)/([\d.]+)/([\d.]+)/([\d.]+)/([\d.]+)")
+RAWN = re.compile(r"raw age-group n for [^=]*=\s*(\d+)")
+
+
+def lms_fit(z, y):
+    """Least-squares LMS (L, M, S) from values y at z-scores z: z = ((y/M)^L - 1)/(L S)."""
+    from scipy.optimize import least_squares
+    z, y = np.asarray(z, float), np.asarray(y, float)
+
+    def resid(p):
+        L, M, S = p
+        if abs(L) < 1e-6:
+            return np.log(y / M) / S - z
+        return ((y / M) ** L - 1) / (L * S) - z
+    M0 = y[len(y) // 2]
+    S0 = (np.log(y[-1]) - np.log(y[0])) / (z[-1] - z[0])
+    r = least_squares(resid, x0=[0.0 + 1e-3, M0, S0], bounds=([-5, 0.1, 1e-3], [5, 50, 2]))
+    return r.x, float(np.max(np.abs(r.fun)))
+
+
+def fit_lms_from_zlines(rows):
+    if "notes" not in rows:
+        return rows
+    for i, r in rows.iterrows():
+        m = ZLINE.search(str(r.get("notes", "")))
+        if not m:
+            continue
+        y = [float(v) for v in m.groups()]
+        (L, M, S), maxres = lms_fit([-2, -1, 0, 1, 2], y)
+        rows.at[i, "lms_L"], rows.at[i, "lms_M"], rows.at[i, "lms_S"] = L, M, S
+        rows.at[i, "lms_maxres_z"] = maxres
+        rows.at[i, "zline_sd"] = (y[3] - y[1]) / 2          # central SD for pooling on the normal scale
+        rows.at[i, "p50_cm"] = y[2]
+        nm = RAWN.search(str(r.get("notes", "")))
+        if nm and pd.isna(r.get("n")):
+            rows.at[i, "n"] = float(nm.group(1))
+            rows.at[i, "n_note"] = "raw age-group n (values are LMS-smoothed)"
+    return rows
 
 
 def age_mid(r):
@@ -140,6 +182,7 @@ def load_rows():
     if "measurement_concern" not in rows:
         rows["measurement_concern"] = False
     rows["measurement_concern"] = rows["measurement_concern"].fillna(False).astype(bool)
+    rows = fit_lms_from_zlines(rows)
     out = []
     for _, r in rows.iterrows():
         m, s, how = to_mean_sd(r)
@@ -147,11 +190,19 @@ def load_rows():
     rows = pd.concat([rows.reset_index(drop=True), pd.DataFrame(out)], axis=1)
     cur_p = os.path.join(DATA, "tool_curation.csv")
     if os.path.exists(cur_p):
-        cur = pd.read_csv(cur_p, dtype=str)
-        excl = set(cur.loc[cur.action == "exclude", "study_id"])
-        flag = set(cur.loc[cur.action == "flag", "study_id"])
-        rows = rows[~rows.study_id.isin(excl)].copy()
-        rows.loc[rows.study_id.isin(flag), "measurement_concern"] = True
+        cur = pd.read_csv(cur_p, dtype=str).fillna("")
+        rows["curation_note"] = ""
+        drop = np.zeros(len(rows), bool)
+        for _, c in cur.iterrows():
+            m = (rows.study_id == c.study_id).to_numpy().copy()
+            if c.label_contains:
+                m &= rows.age_bin_label.fillna("").astype(str).str.contains(c.label_contains, regex=False).to_numpy()
+            if c.action == "exclude":
+                drop |= m
+            elif c.action == "flag":
+                rows.loc[m, "measurement_concern"] = True
+                rows.loc[m, "curation_note"] = c.reason
+        rows = rows[~drop].copy()
     return rows
 
 
@@ -239,17 +290,25 @@ def main():
         basis = lambda t: np.empty((len(np.atleast_1d(t)), 0))
     B = basis(A["t"])
     mm = reml_metareg(A["y"], A["v"], B)
-    ms = reml_metareg(A["ys"], A["vs"], B)
+    # SD model: simpler basis (3 knots) - SDs are noisier and sparser than means
+    if len(knots) >= 3:
+        knots_sd = np.quantile(A["t"].unique(), [0.05, 0.5, 0.95])
+        basis_sd = lambda t: ns_basis(t, knots_sd)
+    else:
+        knots_sd, basis_sd = knots, basis
+    ms = reml_metareg(A["ys"], A["vs"], basis_sd(A["t"]))
     grid = np.round(np.arange(0, 18.0001, 0.05), 2)
     Bg = basis(np.log(grid + 0.25))
     ly, lse = predict(mm, Bg)
-    ls, lsse = predict(ms, Bg)
+    ls, lsse = predict(ms, basis_sd(np.log(grid + 0.25)))
     tau = math.sqrt(mm["tau2"])
     curve = dict(age=grid.tolist(), mean=np.exp(ly).round(4).tolist(),
                  mean_ci_lo=np.exp(ly - 1.96 * lse).round(4).tolist(), mean_ci_hi=np.exp(ly + 1.96 * lse).round(4).tolist(),
                  pop_mean_pi_lo=np.exp(ly - 1.96 * np.sqrt(tau ** 2 + lse ** 2)).round(4).tolist(),
                  pop_mean_pi_hi=np.exp(ly + 1.96 * np.sqrt(tau ** 2 + lse ** 2)).round(4).tolist(),
-                 sd=np.exp(ls).round(4).tolist())
+                 sd=np.exp(ls).round(4).tolist(),
+                 k_local=[int(A.loc[(A.age >= a - max(0.1, min(1.5, 0.25 * a))) & (A.age <= a + max(0.1, min(1.5, 0.25 * a))),
+                                    "study_id"].nunique()) for a in grid])
     age_model = dict(k_rows=int(len(A)), k_studies=int(A.study_id.nunique()), n_total=int(A.n.sum()),
                      tau_log=tau, tau2_sd_model=ms["tau2"], knots_t=knots.tolist(),
                      transform="t = ln(age_years + 0.25)", curve=curve)
@@ -306,10 +365,24 @@ def main():
             sd=None if pd.isna(r["sd"]) else round(float(r["sd"]), 3), derivation=r["derivation"],
             technique=str(r.get("technique", ""))[:160], fatpad=str(r.get("fatpad_depressed", "")),
             source=str(r.get("source_level", "")), concern=bool(r.get("measurement_concern", False)),
-            pmid=str(r.get("pmid", "")), doi=str(r.get("doi", ""))))
+            pmid=str(r.get("pmid", "")), doi=str(r.get("doi", "")),
+            lms=None if pd.isna(r.get("lms_L")) or pd.isna(r.get("lms_S")) else [round(float(r["lms_L"]), 4), round(float(r["lms_M"]), 4), round(float(r["lms_S"]), 5)],
+            note=str(r.get("curation_note", "") or "")))
     model = dict(version=pd.Timestamp.today().strftime("%Y-%m-%d"), age_model=age_model, tanner_model=tanner, rows=studies)
+    def clean(o):
+        if isinstance(o, dict):
+            return {k: clean(v) for k, v in o.items()}
+        if isinstance(o, (list, tuple)):
+            return [clean(v) for v in o]
+        if isinstance(o, (np.floating, float)):
+            return None if not math.isfinite(float(o)) else float(o)
+        if isinstance(o, np.integer):
+            return int(o)
+        if isinstance(o, np.bool_):
+            return bool(o)
+        return o
     with open(os.path.join(APP, "model.json"), "w") as f:
-        json.dump(model, f, default=lambda x: None if (isinstance(x, float) and math.isnan(x)) else float(x))
+        json.dump(clean(model), f, allow_nan=False)
 
     # ---- diagnostic plot
     import matplotlib
