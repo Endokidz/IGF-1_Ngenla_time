@@ -1,0 +1,329 @@
+<title>SPL Z-Score Calculator</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Serif:wght@500;600&display=swap">
+<style>
+/* Layout: clinical worksheet — input column + results column; chart and per-study table full width below */
+:root {
+  --paper: #f6f7f5; --card: #ffffff; --ink: #14202b; --ink-2: #4a5662; --ink-3: #7a8590;
+  --rule: #dfe3e2; --accent: #1f6f8b; --accent-soft: #e2eef2;
+  --ok: #2f7d4f; --ok-soft: #e3f1e8; --warn: #9a6512; --warn-soft: #f7ecd9; --crit: #a8352a; --crit-soft: #f6e1de;
+  --band1: #d6e6ec; --band2: #ecf3f5; --curve: #1f6f8b; --pt: #a8352a;
+  --f-ui: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-num: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --f-head: "IBM Plex Serif", Georgia, "Times New Roman", serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --paper: #11171c; --card: #182129; --ink: #e6ecef; --ink-2: #b4c0c8; --ink-3: #8592a0;
+  --rule: #2a3640; --accent: #6fb7d1; --accent-soft: #1d3440;
+  --ok: #6cc28f; --ok-soft: #173225; --warn: #e2b05a; --warn-soft: #3a2c14; --crit: #ec8b80; --crit-soft: #3d1f1b;
+  --band1: #1f3b47; --band2: #19303a; --curve: #6fb7d1; --pt: #ec8b80; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --paper: #11171c; --card: #182129; --ink: #e6ecef; --ink-2: #b4c0c8; --ink-3: #8592a0;
+  --rule: #2a3640; --accent: #6fb7d1; --accent-soft: #1d3440;
+  --ok: #6cc28f; --ok-soft: #173225; --warn: #e2b05a; --warn-soft: #3a2c14; --crit: #ec8b80; --crit-soft: #3d1f1b;
+  --band1: #1f3b47; --band2: #19303a; --curve: #6fb7d1; --pt: #ec8b80; color-scheme: dark }
+* { box-sizing: border-box }
+body { background: var(--paper); color: var(--ink); font-family: var(--f-ui); font-size: 15px; line-height: 1.5;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 20px 40px }
+.wrap { max-width: 1100px; margin: 0 auto; display: grid; gap: 20px }
+header h1 { font-family: var(--f-head); font-weight: 600; font-size: 1.7rem; margin: 0; text-wrap: balance }
+header p { margin: 4px 0 0; color: var(--ink-2); max-width: 70ch }
+.grid { display: grid; grid-template-columns: minmax(260px, 340px) 1fr; gap: 20px; align-items: start }
+@media (max-width: 780px) { .grid { grid-template-columns: 1fr } }
+.panel { background: var(--card); border: 1px solid var(--rule); border-radius: 10px; padding: 18px; min-width: 0 }
+.panel h2 { font-size: .78rem; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); margin: 0 0 12px; font-weight: 600 }
+form { display: grid; gap: 14px }
+label { display: grid; gap: 4px; font-weight: 500; font-size: .92rem }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px }
+input, select { font: inherit; font-family: var(--f-num); padding: 8px 10px; border: 1px solid var(--rule); border-radius: 6px; background: var(--paper); color: var(--ink); width: 100% }
+input:focus-visible, select:focus-visible, button:focus-visible, summary:focus-visible, a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px }
+.hint { font-weight: 400; color: var(--ink-3); font-size: .8rem }
+.checks { display: grid; gap: 6px; font-size: .88rem }
+.checks label { display: flex; gap: 8px; align-items: flex-start; font-weight: 400 }
+.checks input { width: auto; margin-top: 3px }
+.example { font-size: .8rem; color: var(--ink-3) }
+.results { display: grid; gap: 16px }
+.headline { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px }
+.stat { display: grid; gap: 2px }
+.stat .k { font-size: .75rem; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-3) }
+.stat .v { font-family: var(--f-num); font-size: 1.6rem; font-weight: 500; font-variant-numeric: tabular-nums }
+.stat .s { font-size: .82rem; color: var(--ink-2); font-family: var(--f-num) }
+.chip { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px; font-size: .82rem; font-weight: 600 }
+.chip.ok { background: var(--ok-soft); color: var(--ok) } .chip.warn { background: var(--warn-soft); color: var(--warn) }
+.chip.crit { background: var(--crit-soft); color: var(--crit) } .chip.info { background: var(--accent-soft); color: var(--accent) }
+.refblock { border-top: 1px solid var(--rule); padding-top: 12px; display: grid; gap: 8px }
+.refblock h3 { margin: 0; font-size: 1rem; font-weight: 600 }
+.note { font-size: .85rem; color: var(--ink-2); max-width: 75ch }
+.alerts { display: grid; gap: 8px }
+.alert { border-left: 3px solid var(--warn); background: var(--warn-soft); padding: 8px 12px; border-radius: 0 6px 6px 0; font-size: .88rem }
+.alert.crit { border-color: var(--crit); background: var(--crit-soft) }
+.chartbox { overflow-x: auto }
+svg text { fill: var(--ink-2); font-family: var(--f-ui); font-size: 11px }
+.tablebox { overflow-x: auto }
+table { border-collapse: collapse; width: 100%; font-size: .86rem }
+th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--rule); vertical-align: top }
+th { font-size: .74rem; letter-spacing: .05em; text-transform: uppercase; color: var(--ink-3); font-weight: 600; white-space: nowrap }
+td.num { font-family: var(--f-num); font-variant-numeric: tabular-nums; white-space: nowrap }
+td .sub { color: var(--ink-3); font-size: .78rem; display: block }
+a { color: var(--accent) }
+details { background: var(--card); border: 1px solid var(--rule); border-radius: 10px; padding: 12px 18px }
+summary { cursor: pointer; font-weight: 600 }
+details p, details li { font-size: .9rem; color: var(--ink-2); max-width: 80ch }
+.empty { color: var(--ink-3); font-size: .9rem }
+@media (prefers-reduced-motion: no-preference) { .stat .v { transition: color .2s } }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>SPL Z-Score Calculator</h1>
+    <p>Stretched penile length (SPL) against published references. You get a pooled reference across studies, a Tanner-stage reference and each study's own values. Every number traces to a published source.</p>
+  </header>
+
+  <div class="grid">
+    <section class="panel" aria-labelledby="in-h">
+      <h2 id="in-h">Patient</h2>
+      <form id="f" novalidate>
+        <div class="row2">
+          <label for="ageY">Age, years<input id="ageY" type="number" min="0" max="18" step="1" inputmode="numeric"></label>
+          <label for="ageM">+ months<input id="ageM" type="number" min="0" max="11" step="1" inputmode="numeric"></label>
+        </div>
+        <label for="ageD">or newborn age, days <span class="hint">overrides years/months when filled</span><input id="ageD" type="number" min="0" max="28" step="1" inputmode="numeric"></label>
+        <label for="tanner">Tanner genital stage
+          <select id="tanner">
+            <option value="">Not assessed / prepubertal infant</option>
+            <option value="1">G1</option><option value="2">G2</option><option value="3">G3</option><option value="4">G4</option><option value="5">G5</option>
+          </select></label>
+        <label for="spl">Stretched penile length, cm<input id="spl" type="number" min="0.5" max="25" step="0.1" inputmode="decimal"></label>
+        <div class="checks" role="group" aria-label="Measurement conditions">
+          <label for="cFat"><input id="cFat" type="checkbox"> Fat pad fully depressed to the pubic bone</label>
+          <label for="cObese"><input id="cObese" type="checkbox"> BMI ≥ 95th centile</label>
+          <label for="cEarly"><input id="cEarly" type="checkbox"> Newborn measured in the first 24 h</label>
+        </div>
+        <p class="example" id="exampleNote">Example values are filled in so you can see the output. Replace them with your patient's.</p>
+      </form>
+    </section>
+
+    <section class="panel results" aria-live="polite" aria-labelledby="out-h">
+      <h2 id="out-h">Result</h2>
+      <div id="out"></div>
+    </section>
+  </div>
+
+  <section class="panel">
+    <h2>Where this child sits</h2>
+    <div class="chartbox"><svg id="chart" viewBox="0 0 760 330" width="100%" role="img" aria-label="Pooled SPL reference by age with patient point"></svg></div>
+    <p class="note" id="chartNote"></p>
+  </section>
+
+  <section class="panel">
+    <h2>Study by study</h2>
+    <p class="note">These are all the published reference rows covering this age, and this stage where one is entered. Each gives its own mean ± SD, z-score and percentile. Rows flagged ⚠ had a pre-specified measurement concern.</p>
+    <div class="tablebox"><table id="tbl"><thead><tr><th>Study</th><th>Country</th><th>Age / stage</th><th>n</th><th>Mean ± SD (cm)</th><th>z</th><th>Centile</th><th>Technique</th></tr></thead><tbody></tbody></table></div>
+  </section>
+
+  <details>
+    <summary>Methods, data and limitations</summary>
+    <div id="methods"></div>
+  </details>
+</div>
+
+<script type="application/json" id="model">__MODEL_JSON__</script>
+<script>
+(function () {
+  "use strict";
+  const M = JSON.parse(document.getElementById("model").textContent);
+  const C = M.age_model.curve;
+  const $ = (id) => document.getElementById(id);
+
+  // ---- statistics -------------------------------------------------------
+  function erf(x) { // Abramowitz & Stegun 7.1.26 refined with high-precision series for |x|<3
+    const s = Math.sign(x); x = Math.abs(x);
+    if (x < 3) { let sum = x, term = x, n = 0; do { n++; term *= -x * x / n; const add = term / (2 * n + 1); sum += add; if (Math.abs(add) < 1e-16) break; } while (n < 200); return s * 2 / Math.sqrt(Math.PI) * sum; }
+    const t = 1 / (1 + 0.3275911 * x); const y = 1 - (((((1.061405429 * t - 1.453152027) * t) + 1.421413741) * t - 0.284496736) * t + 0.254829592) * t * Math.exp(-x * x);
+    return s * y;
+  }
+  const Phi = (z) => 0.5 * (1 + erf(z / Math.SQRT2));
+  function interp(arr, age) {
+    const a = C.age; if (age <= a[0]) return arr[0]; if (age >= a[a.length - 1]) return arr[arr.length - 1];
+    const i = Math.min(a.length - 2, Math.floor((age - a[0]) / (a[1] - a[0])));
+    const f = (age - a[i]) / (a[i + 1] - a[i]); return arr[i] + f * (arr[i + 1] - arr[i]);
+  }
+  const fmt = (x, d = 2) => (x == null || !isFinite(x)) ? "–" : x.toFixed(d);
+  const fz = (z) => (z == null || !isFinite(z)) ? "–" : (z >= 0 ? "+" : "−") + Math.abs(z).toFixed(2);
+  function fpct(z) { if (z == null || !isFinite(z)) return "–"; const p = 100 * Phi(z); if (p < 0.1) return "<0.1"; if (p > 99.9) return ">99.9"; return p < 1 || p > 99 ? p.toFixed(1) : p.toFixed(0); }
+  function chip(z) {
+    if (z == null || !isFinite(z)) return "";
+    if (z < -2.5) return '<span class="chip crit">Below −2.5 SD · micropenis range</span>';
+    if (z < -2) return '<span class="chip warn">Low · −2.5 to −2 SD</span>';
+    if (z > 2) return '<span class="chip info">Above +2 SD</span>';
+    return '<span class="chip ok">Within ±2 SD</span>';
+  }
+  const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+  // ---- inputs -----------------------------------------------------------
+  function readInputs() {
+    const d = parseFloat($("ageD").value), y = parseFloat($("ageY").value), m = parseFloat($("ageM").value);
+    let age = null;
+    if (isFinite(d)) age = d / 365.25; else if (isFinite(y) || isFinite(m)) age = (isFinite(y) ? y : 0) + (isFinite(m) ? m : 0) / 12;
+    const spl = parseFloat($("spl").value);
+    const st = $("tanner").value ? parseInt($("tanner").value, 10) : null;
+    return { age, spl: isFinite(spl) ? spl : null, stage: st, fat: $("cFat").checked, obese: $("cObese").checked, early: $("cEarly").checked };
+  }
+
+  // ---- pooled references -------------------------------------------------
+  function pooledAge(age, spl) {
+    const ageMax = C.age[C.age.length - 1];
+    const covered = M.age_model.knots_t.length > 0 || age <= 28 / 365.25 + 1e-9;
+    if (!covered || age > ageMax) return null;
+    const mean = interp(C.mean, age), sd = interp(C.sd, age);
+    const plo = interp(C.pop_mean_pi_lo, age), phi = interp(C.pop_mean_pi_hi, age);
+    const z = (spl - mean) / sd;
+    return { mean, sd, z, cut: mean - 2.5 * sd, zLo: (spl - phi) / sd, zHi: (spl - plo) / sd, plo, phi };
+  }
+  function pooledTanner(stage, spl) {
+    const t = M.tanner_model["G" + stage]; if (!t) return null;
+    const z = (spl - t.mean) / t.sd;
+    return Object.assign({}, t, { z, cut: t.mean - 2.5 * t.sd,
+      zLo: t.pop_mean_pi_hi ? (spl - t.pop_mean_pi_hi) / t.sd : null, zHi: t.pop_mean_pi_lo ? (spl - t.pop_mean_pi_lo) / t.sd : null });
+  }
+  function studyRows(age, stage, spl) {
+    const tol = 1e-6;
+    return M.rows.filter((r) => {
+      const inAge = age >= r.age_lo - tol && age <= r.age_hi + tol;
+      if (r.tanner != null) return stage != null && r.tanner === stage && (r.age_lo == null || inAge || r.kind === "tanner");
+      return inAge;
+    }).map((r) => Object.assign({}, r, { z: r.sd ? (spl - r.mean) / r.sd : null }))
+      .sort((a, b) => (a.tanner != null) - (b.tanner != null) || (a.region || "").localeCompare(b.region || "") || a.mean - b.mean);
+  }
+
+  // ---- render -----------------------------------------------------------
+  function render() {
+    const I = readInputs();
+    const out = $("out");
+    if (I.age == null || I.spl == null) { out.innerHTML = '<p class="empty">Enter an age and a stretched penile length to see the result.</p>'; drawChart(I, null); fillTable([], I); return; }
+    const A = pooledAge(I.age, I.spl), T = I.stage ? pooledTanner(I.stage, I.spl) : null;
+    const rows = studyRows(I.age, I.stage, I.spl);
+    const ageTxt = I.age < 1 / 12 ? `${Math.round(I.age * 365.25)} days` : `${Math.floor(I.age)} y ${Math.round((I.age % 1) * 12)} mo`;
+    let h = "";
+    const primary = A || T;
+    if (primary) {
+      h += `<div class="headline">
+        <div class="stat"><span class="k">z-score ${A ? "(age)" : "(Tanner)"}</span><span class="v">${fz(primary.z)}</span><span class="s">${chip(primary.z)}</span></div>
+        <div class="stat"><span class="k">Centile</span><span class="v">${fpct(primary.z)}</span><span class="s">percent of boys measure shorter</span></div>
+        <div class="stat"><span class="k">Reference mean ± SD</span><span class="v">${fmt(primary.mean)} <small>± ${fmt(primary.sd)}</small></span><span class="s">−2.5 SD = ${fmt(primary.cut)} cm</span></div>
+      </div>`;
+    }
+    if (A) {
+      h += `<div class="refblock"><h3>Pooled age reference · ${esc(ageTxt)}</h3>
+        <p class="note">This is the random-effects pooled mean and within-population SD at this age, from ${M.age_model.k_studies} studies (${M.age_model.k_rows} age-group rows, n = ${M.age_model.n_total.toLocaleString()}).
+        Published populations differ in their mean. Across the 95% range of plausible population means (${fmt(A.plo)}–${fmt(A.phi)} cm), this child's z-score lies between <strong>${fz(A.zLo)}</strong> and <strong>${fz(A.zHi)}</strong>.</p></div>`;
+    } else {
+      h += `<div class="refblock"><h3>Pooled age reference</h3><p class="note">The pooled database does not cover this age yet. Use the study rows below where available.</p></div>`;
+    }
+    if (I.stage) {
+      if (T) {
+        h += `<div class="refblock"><h3>Tanner G${I.stage} reference ${chip(T.z)}</h3>
+          <p class="note">Mean ${fmt(T.mean)} ± ${fmt(T.sd)} cm (${T.k} rows, ${T.k_studies} studies, n = ${T.n.toLocaleString()}); z ${fz(T.z)}, centile ${fpct(T.z)}.
+          ${T.zLo != null ? `Across plausible populations: z ${fz(T.zLo)} to ${fz(T.zHi)}.` : "Only one study is available for this stage, so between-population spread cannot be estimated."}
+          Stage-based references ignore pubertal timing within a stage. Ages in the source data: ${fmt(T.age_range[0], 1)}–${fmt(T.age_range[1], 1)} y.</p></div>`;
+      } else {
+        h += `<div class="refblock"><h3>Tanner G${I.stage} reference</h3><p class="note">No published Tanner G${I.stage} data have been extracted yet.</p></div>`;
+      }
+    }
+    const al = [];
+    const zMin = primary ? primary.z : null;
+    if (zMin != null && zMin < -2) al.push(`<div class="alert ${zMin < -2.5 ? "crit" : ""}">At the −2.5 SD threshold a single measurement is unreliable. With realistic measurement error, about two-thirds of single-measurement "micropenis" labels are wrong. Confirm with a second trained examiner before you investigate.</div>`);
+    if (!I.fat) al.push('<div class="alert">Fat-pad depression is not confirmed. If the ruler was not pressed to the pubic bone, the length is underestimated, often by several millimetres in a child with obesity. Re-measure before you interpret.</div>');
+    if (I.obese) al.push('<div class="alert">BMI ≥ 95th centile: buried penis is a leading cause of unconfirmed micropenis referrals. Compare the length with the fat pad fully depressed and not depressed.</div>');
+    if (I.early && I.age <= 28 / 365.25) al.push('<div class="alert">Newborn measured in the first 24 h. Lengths at 1–12 h are 0.22–0.34 cm shorter than at 1–7 days (Matsuo 2014). Re-measure after 24 h.</div>');
+    if (I.age > 9 && !I.stage) al.push('<div class="alert">From about 9 years, SPL depends more on pubertal stage than on age. Enter the Tanner genital stage.</div>');
+    if (al.length) h += `<div class="alerts">${al.join("")}</div>`;
+    out.innerHTML = h;
+    drawChart(I, A);
+    fillTable(rows, I);
+  }
+
+  function fillTable(rows, I) {
+    const tb = $("tbl").querySelector("tbody");
+    if (!rows.length) { tb.innerHTML = `<tr><td colspan="8" class="empty">${I.age == null ? "Enter an age." : "No published rows cover this age" + (I.stage ? " and stage" : "") + " yet."}</td></tr>`; return; }
+    tb.innerHTML = rows.map((r) => {
+      const link = r.doi ? `https://doi.org/${encodeURI(r.doi)}` : (r.pmid ? `https://pubmed.ncbi.nlm.nih.gov/${encodeURIComponent(r.pmid)}/` : null);
+      const name = esc(r.author || r.study) + (r.year ? " " + r.year : "");
+      return `<tr>
+        <td>${link ? `<a href="${link}" target="_blank" rel="noopener">${name}</a>` : name}${r.concern ? " ⚠" : ""}<span class="sub">${esc(r.source)}</span></td>
+        <td>${esc(r.country)}<span class="sub">${esc(r.region)}</span></td>
+        <td>${esc(r.tanner != null ? "G" + r.tanner + (r.age_label ? " · " + r.age_label : "") : r.age_label)}</td>
+        <td class="num">${r.n ?? "–"}</td>
+        <td class="num">${fmt(r.mean)} ± ${r.sd != null ? fmt(r.sd) : "–"}<span class="sub">${esc(r.derivation)}</span></td>
+        <td class="num">${fz(r.z)}</td>
+        <td class="num">${fpct(r.z)}</td>
+        <td>${esc(r.fatpad)}<span class="sub">${esc((r.technique || "").slice(0, 90))}${(r.technique || "").length > 90 ? "…" : ""}</span></td></tr>`;
+    }).join("");
+  }
+
+  function drawChart(I, A) {
+    const svg = $("chart"), W = 760, H = 330, L = 46, R = 14, Tm = 12, B = 36;
+    const ages = C.age, maxAge = ages[ages.length - 1];
+    const has = M.age_model.knots_t.length > 0;
+    const xmax = has ? maxAge : 0.1;
+    const ymaxData = Math.max(...C.mean.map((m, i) => m + 3 * C.sd[i]), I.spl || 0);
+    const ymax = Math.ceil(ymaxData + 0.5), ymin = 0;
+    const x = (a) => L + (a / xmax) * (W - L - R), y = (v) => H - B - ((v - ymin) / (ymax - ymin)) * (H - B - Tm);
+    const band = (z1, z2) => { let d = ""; ages.forEach((a, i) => { if (a > xmax) return; d += (d ? "L" : "M") + x(a).toFixed(1) + "," + y(C.mean[i] + z2 * C.sd[i]).toFixed(1); });
+      for (let i = ages.length - 1; i >= 0; i--) { if (ages[i] > xmax) continue; d += "L" + x(ages[i]).toFixed(1) + "," + y(C.mean[i] + z1 * C.sd[i]).toFixed(1); } return d + "Z"; };
+    const line = (z) => { let d = ""; ages.forEach((a, i) => { if (a > xmax) return; d += (d ? "L" : "M") + x(a).toFixed(1) + "," + y(C.mean[i] + z * C.sd[i]).toFixed(1); }); return d; };
+    let g = "";
+    const ystep = ymax > 12 ? 3 : ymax > 6 ? 1 : 0.5;
+    for (let v = 0; v <= ymax + 1e-9; v += ystep) g += `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" stroke="var(--rule)" stroke-width="1"/><text x="${L - 6}" y="${y(v) + 4}" text-anchor="end">${v}</text>`;
+    const xstep = xmax > 10 ? 2 : xmax > 2 ? 1 : 0.02;
+    for (let a = 0; a <= xmax + 1e-9; a += xstep) g += `<text x="${x(a)}" y="${H - B + 16}" text-anchor="middle">${xmax > 2 ? a : Math.round(a * 365.25)}</text>`;
+    g += `<text x="${(L + W - R) / 2}" y="${H - 4}" text-anchor="middle">${xmax > 2 ? "Age (years)" : "Age (days)"}</text>`;
+    g += `<text x="12" y="${(H - B) / 2}" text-anchor="middle" transform="rotate(-90 12 ${(H - B) / 2})">SPL (cm)</text>`;
+    if (has) {
+      g += `<path d="${band(-2.5, 2.5)}" fill="var(--band2)"/><path d="${band(-2, 2)}" fill="var(--band1)"/>`;
+      g += `<path d="${line(0)}" fill="none" stroke="var(--curve)" stroke-width="2"/>`;
+      g += `<path d="${line(-2.5)}" fill="none" stroke="var(--crit)" stroke-width="1" stroke-dasharray="4 3"/>`;
+      g += `<text x="${W - R - 4}" y="${y(C.mean[C.mean.length - 1] - 2.5 * C.sd[C.sd.length - 1]) - 4}" text-anchor="end">−2.5 SD</text>`;
+    }
+    M.rows.filter((r) => r.tanner == null && r.sd && r.age_lo <= xmax).forEach((r) => {
+      const am = Math.min(xmax, r.age_mid != null ? r.age_mid : (r.age_lo + r.age_hi) / 2);
+      g += `<circle cx="${x(am)}" cy="${y(r.mean)}" r="2.6" fill="var(--ink-3)" opacity=".55"><title>${esc(r.author || r.study)} ${r.year || ""}: ${fmt(r.mean)} ± ${fmt(r.sd)} cm (${esc(r.age_label)})</title></circle>`;
+    });
+    if (I.age != null && I.spl != null && I.age <= xmax) g += `<circle cx="${x(I.age)}" cy="${y(I.spl)}" r="6" fill="var(--pt)" stroke="var(--card)" stroke-width="2"><title>This child: ${fmt(I.spl, 1)} cm</title></circle>`;
+    svg.innerHTML = g;
+    $("chartNote").textContent = has
+      ? "Pooled mean (line), ±2 SD (dark band) and ±2.5 SD (light band). Grey dots are published age-group means. The red point is this child."
+      : "The pooled database currently covers the newborn period only. Grey dots are the published newborn means.";
+  }
+
+  function methods() {
+    const am = M.age_model;
+    $("methods").innerHTML = `
+      <p><strong>Data.</strong> All values were extracted from published studies, each stored with the verbatim sentence or table cell it came from.
+        Points from published scatter plots are included only after validated digitisation: median point error 0.02 cm, bin-mean error ≤ 0.12 cm on known test data.
+        Database version ${esc(M.version)}: ${M.rows.length} reference rows.</p>
+      <p><strong>Conversions.</strong> Where a study reported percentiles, the SD was derived from the widest symmetric pair assuming normality.
+        Medians with IQR or range were converted with the Luo (2018) and Wan (2014) methods, and LMS parameters with SD ≈ M·S. Each row shows its derivation.</p>
+      <p><strong>Pooled age model.</strong> Random-effects meta-regression of ln(mean) on a natural cubic spline of ln(age + 0.25) (REML, Knapp–Hartung), and of ln(SD) on the same basis.
+        Between-study spread of means: τ = ${fmt(am.tau_log, 3)} on the log scale, about ${fmt(100 * am.tau_log, 0)}% of the mean. This spread is why a z-score range is shown alongside the point estimate.</p>
+      <p><strong>Tanner model.</strong> Random-effects pooled ln(mean) and ln(SD) for each genital stage.</p>
+      <p><strong>Limitations.</strong></p>
+      <ul>
+        <li>Published populations differ as much in their mean as children differ within a population, and most of that difference is local method rather than ancestry. A technique-matched local reference, where one exists, is preferable.</li>
+        <li>Within-population SDs include measurement error.</li>
+        <li>Many source studies did not describe fat-pad depression.</li>
+        <li>This calculator supports, and does not replace, clinical judgement. Confirm a low value with a second trained examiner.</li>
+      </ul>`;
+  }
+
+  // ---- boot: realistic example (clearly marked) --------------------------
+  const has = M.age_model.knots_t.length > 0;
+  if (has) { $("ageY").value = 7; $("ageM").value = 0; $("spl").value = 3.6; } else { $("ageD").value = 2; $("spl").value = 2.4; }
+  $("cFat").checked = true;
+  ["ageY", "ageM", "ageD", "tanner", "spl", "cFat", "cObese", "cEarly"].forEach((id) => $(id).addEventListener("input", () => { $("exampleNote").hidden = true; render(); }));
+  $("f").addEventListener("submit", (e) => e.preventDefault());
+  methods();
+  render();
+})();
+</script>

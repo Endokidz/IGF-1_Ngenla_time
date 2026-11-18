@@ -1,0 +1,329 @@
+<title>SPL Z-Score Calculator</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Serif:wght@500;600&display=swap">
+<style>
+/* Layout: clinical worksheet — input column + results column; chart and per-study table full width below */
+:root {
+  --paper: #f6f7f5; --card: #ffffff; --ink: #14202b; --ink-2: #4a5662; --ink-3: #7a8590;
+  --rule: #dfe3e2; --accent: #1f6f8b; --accent-soft: #e2eef2;
+  --ok: #2f7d4f; --ok-soft: #e3f1e8; --warn: #9a6512; --warn-soft: #f7ecd9; --crit: #a8352a; --crit-soft: #f6e1de;
+  --band1: #d6e6ec; --band2: #ecf3f5; --curve: #1f6f8b; --pt: #a8352a;
+  --f-ui: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-num: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --f-head: "IBM Plex Serif", Georgia, "Times New Roman", serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --paper: #11171c; --card: #182129; --ink: #e6ecef; --ink-2: #b4c0c8; --ink-3: #8592a0;
+  --rule: #2a3640; --accent: #6fb7d1; --accent-soft: #1d3440;
+  --ok: #6cc28f; --ok-soft: #173225; --warn: #e2b05a; --warn-soft: #3a2c14; --crit: #ec8b80; --crit-soft: #3d1f1b;
+  --band1: #1f3b47; --band2: #19303a; --curve: #6fb7d1; --pt: #ec8b80; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --paper: #11171c; --card: #182129; --ink: #e6ecef; --ink-2: #b4c0c8; --ink-3: #8592a0;
+  --rule: #2a3640; --accent: #6fb7d1; --accent-soft: #1d3440;
+  --ok: #6cc28f; --ok-soft: #173225; --warn: #e2b05a; --warn-soft: #3a2c14; --crit: #ec8b80; --crit-soft: #3d1f1b;
+  --band1: #1f3b47; --band2: #19303a; --curve: #6fb7d1; --pt: #ec8b80; color-scheme: dark }
+* { box-sizing: border-box }
+body { background: var(--paper); color: var(--ink); font-family: var(--f-ui); font-size: 15px; line-height: 1.5;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 20px 40px }
+.wrap { max-width: 1100px; margin: 0 auto; display: grid; gap: 20px }
+header h1 { font-family: var(--f-head); font-weight: 600; font-size: 1.7rem; margin: 0; text-wrap: balance }
+header p { margin: 4px 0 0; color: var(--ink-2); max-width: 70ch }
+.grid { display: grid; grid-template-columns: minmax(260px, 340px) 1fr; gap: 20px; align-items: start }
+@media (max-width: 780px) { .grid { grid-template-columns: 1fr } }
+.panel { background: var(--card); border: 1px solid var(--rule); border-radius: 10px; padding: 18px; min-width: 0 }
+.panel h2 { font-size: .78rem; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); margin: 0 0 12px; font-weight: 600 }
+form { display: grid; gap: 14px }
+label { display: grid; gap: 4px; font-weight: 500; font-size: .92rem }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px }
+input, select { font: inherit; font-family: var(--f-num); padding: 8px 10px; border: 1px solid var(--rule); border-radius: 6px; background: var(--paper); color: var(--ink); width: 100% }
+input:focus-visible, select:focus-visible, button:focus-visible, summary:focus-visible, a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px }
+.hint { font-weight: 400; color: var(--ink-3); font-size: .8rem }
+.checks { display: grid; gap: 6px; font-size: .88rem }
+.checks label { display: flex; gap: 8px; align-items: flex-start; font-weight: 400 }
+.checks input { width: auto; margin-top: 3px }
+.example { font-size: .8rem; color: var(--ink-3) }
+.results { display: grid; gap: 16px }
+.headline { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px }
+.stat { display: grid; gap: 2px }
+.stat .k { font-size: .75rem; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-3) }
+.stat .v { font-family: var(--f-num); font-size: 1.6rem; font-weight: 500; font-variant-numeric: tabular-nums }
+.stat .s { font-size: .82rem; color: var(--ink-2); font-family: var(--f-num) }
+.chip { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px; font-size: .82rem; font-weight: 600 }
+.chip.ok { background: var(--ok-soft); color: var(--ok) } .chip.warn { background: var(--warn-soft); color: var(--warn) }
+.chip.crit { background: var(--crit-soft); color: var(--crit) } .chip.info { background: var(--accent-soft); color: var(--accent) }
+.refblock { border-top: 1px solid var(--rule); padding-top: 12px; display: grid; gap: 8px }
+.refblock h3 { margin: 0; font-size: 1rem; font-weight: 600 }
+.note { font-size: .85rem; color: var(--ink-2); max-width: 75ch }
+.alerts { display: grid; gap: 8px }
+.alert { border-left: 3px solid var(--warn); background: var(--warn-soft); padding: 8px 12px; border-radius: 0 6px 6px 0; font-size: .88rem }
+.alert.crit { border-color: var(--crit); background: var(--crit-soft) }
+.chartbox { overflow-x: auto }
+svg text { fill: var(--ink-2); font-family: var(--f-ui); font-size: 11px }
+.tablebox { overflow-x: auto }
+table { border-collapse: collapse; width: 100%; font-size: .86rem }
+th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--rule); vertical-align: top }
+th { font-size: .74rem; letter-spacing: .05em; text-transform: uppercase; color: var(--ink-3); font-weight: 600; white-space: nowrap }
+td.num { font-family: var(--f-num); font-variant-numeric: tabular-nums; white-space: nowrap }
+td .sub { color: var(--ink-3); font-size: .78rem; display: block }
+a { color: var(--accent) }
+details { background: var(--card); border: 1px solid var(--rule); border-radius: 10px; padding: 12px 18px }
+summary { cursor: pointer; font-weight: 600 }
+details p, details li { font-size: .9rem; color: var(--ink-2); max-width: 80ch }
+.empty { color: var(--ink-3); font-size: .9rem }
+@media (prefers-reduced-motion: no-preference) { .stat .v { transition: color .2s } }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>SPL Z-Score Calculator</h1>
+    <p>Stretched penile length (SPL) against published references. You get a pooled reference across studies, a Tanner-stage reference and each study's own values. Every number traces to a published source.</p>
+  </header>
+
+  <div class="grid">
+    <section class="panel" aria-labelledby="in-h">
+      <h2 id="in-h">Patient</h2>
+      <form id="f" novalidate>
+        <div class="row2">
+          <label for="ageY">Age, years<input id="ageY" type="number" min="0" max="18" step="1" inputmode="numeric"></label>
+          <label for="ageM">+ months<input id="ageM" type="number" min="0" max="11" step="1" inputmode="numeric"></label>
+        </div>
+        <label for="ageD">or newborn age, days <span class="hint">overrides years/months when filled</span><input id="ageD" type="number" min="0" max="28" step="1" inputmode="numeric"></label>
+        <label for="tanner">Tanner genital stage
+          <select id="tanner">
+            <option value="">Not assessed / prepubertal infant</option>
+            <option value="1">G1</option><option value="2">G2</option><option value="3">G3</option><option value="4">G4</option><option value="5">G5</option>
+          </select></label>
+        <label for="spl">Stretched penile length, cm<input id="spl" type="number" min="0.5" max="25" step="0.1" inputmode="decimal"></label>
+        <div class="checks" role="group" aria-label="Measurement conditions">
+          <label for="cFat"><input id="cFat" type="checkbox"> Fat pad fully depressed to the pubic bone</label>
+          <label for="cObese"><input id="cObese" type="checkbox"> BMI ≥ 95th centile</label>
+          <label for="cEarly"><input id="cEarly" type="checkbox"> Newborn measured in the first 24 h</label>
+        </div>
+        <p class="example" id="exampleNote">Example values are filled in so you can see the output. Replace them with your patient's.</p>
+      </form>
+    </section>
+
+    <section class="panel results" aria-live="polite" aria-labelledby="out-h">
+      <h2 id="out-h">Result</h2>
+      <div id="out"></div>
+    </section>
+  </div>
+
+  <section class="panel">
+    <h2>Where this child sits</h2>
+    <div class="chartbox"><svg id="chart" viewBox="0 0 760 330" width="100%" role="img" aria-label="Pooled SPL reference by age with patient point"></svg></div>
+    <p class="note" id="chartNote"></p>
+  </section>
+
+  <section class="panel">
+    <h2>Study by study</h2>
+    <p class="note">These are all the published reference rows covering this age, and this stage where one is entered. Each gives its own mean ± SD, z-score and percentile. Rows flagged ⚠ had a pre-specified measurement concern.</p>
+    <div class="tablebox"><table id="tbl"><thead><tr><th>Study</th><th>Country</th><th>Age / stage</th><th>n</th><th>Mean ± SD (cm)</th><th>z</th><th>Centile</th><th>Technique</th></tr></thead><tbody></tbody></table></div>
+  </section>
+
+  <details>
+    <summary>Methods, data and limitations</summary>
+    <div id="methods"></div>
+  </details>
+</div>
+
+<script type="application/json" id="model">{"version":"2026-11-18","age_model":{"k_rows":20,"k_studies":18,"n_total":8150,"tau_log":0.0844272655099318,"tau2_sd_model":0.06639520006474191,"knots_t":[],"transform":"t = ln(age_years + 0.25)","curve":{"age":[0.0,0.05,0.1,0.15,0.2,0.25,0.3,0.35,0.4,0.45,0.5,0.55,0.6,0.65,0.7,0.75,0.8,0.85,0.9,0.95,1.0,1.05,1.1,1.15,1.2,1.25,1.3,1.35,1.4,1.45,1.5,1.55,1.6,1.65,1.7,1.75,1.8,1.85,1.9,1.95,2.0,2.05,2.1,2.15,2.2,2.25,2.3,2.35,2.4,2.45,2.5,2.55,2.6,2.65,2.7,2.75,2.8,2.85,2.9,2.95,3.0,3.05,3.1,3.15,3.2,3.25,3.3,3.35,3.4,3.45,3.5,3.55,3.6,3.65,3.7,3.75,3.8,3.85,3.9,3.95,4.0,4.05,4.1,4.15,4.2,4.25,4.3,4.35,4.4,4.45,4.5,4.55,4.6,4.65,4.7,4.75,4.8,4.85,4.9,4.95,5.0,5.05,5.1,5.15,5.2,5.25,5.3,5.35,5.4,5.45,5.5,5.55,5.6,5.65,5.7,5.75,5.8,5.85,5.9,5.95,6.0,6.05,6.1,6.15,6.2,6.25,6.3,6.35,6.4,6.45,6.5,6.55,6.6,6.65,6.7,6.75,6.8,6.85,6.9,6.95,7.0,7.05,7.1,7.15,7.2,7.25,7.3,7.35,7.4,7.45,7.5,7.55,7.6,7.65,7.7,7.75,7.8,7.85,7.9,7.95,8.0,8.05,8.1,8.15,8.2,8.25,8.3,8.35,8.4,8.45,8.5,8.55,8.6,8.65,8.7,8.75,8.8,8.85,8.9,8.95,9.0,9.05,9.1,9.15,9.2,9.25,9.3,9.35,9.4,9.45,9.5,9.55,9.6,9.65,9.7,9.75,9.8,9.85,9.9,9.95,10.0,10.05,10.1,10.15,10.2,10.25,10.3,10.35,10.4,10.45,10.5,10.55,10.6,10.65,10.7,10.75,10.8,10.85,10.9,10.95,11.0,11.05,11.1,11.15,11.2,11.25,11.3,11.35,11.4,11.45,11.5,11.55,11.6,11.65,11.7,11.75,11.8,11.85,11.9,11.95,12.0,12.05,12.1,12.15,12.2,12.25,12.3,12.35,12.4,12.45,12.5,12.55,12.6,12.65,12.7,12.75,12.8,12.85,12.9,12.95,13.0,13.05,13.1,13.15,13.2,13.25,13.3,13.35,13.4,13.45,13.5,13.55,13.6,13.65,13.7,13.75,13.8,13.85,13.9,13.95,14.0,14.05,14.1,14.15,14.2,14.25,14.3,14.35,14.4,14.45,14.5,14.55,14.6,14.65,14.7,14.75,14.8,14.85,14.9,14.95,15.0,15.05,15.1,15.15,15.2,15.25,15.3,15.35,15.4,15.45,15.5,15.55,15.6,15.65,15.7,15.75,15.8,15.85,15.9,15.95,16.0,16.05,16.1,16.15,16.2,16.25,16.3,16.35,16.4,16.45,16.5,16.55,16.6,16.65,16.7,16.75,16.8,16.85,16.9,16.95,17.0,17.05,17.1,17.15,17.2,17.25,17.3,17.35,17.4,17.45,17.5,17.55,17.6,17.65,17.7,17.75,17.8,17.85,17.9,17.95,18.0],"mean":[3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29,3.29],"mean_ci_lo":[3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17,3.17],"mean_ci_hi":[3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145,3.4145],"pop_mean_pi_lo":[2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767,2.7767],"pop_mean_pi_hi":[3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898,3.898],"sd":[0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745,0.3745]}},"tanner_model":{},"rows":[{"study":"Kareem2020","author":"Kareem","year":2020,"country":"Nigeria (Ile-Ife)","region":"AFR","kind":"newborn","age_label":"term newborn (0-72 h (range 1-70 h; mean 22.8 +- 17.6 h))","age_lo":0.0,"age_hi":0.0767,"age_mid":0.0082,"tanner":null,"n":124,"mean":3.2,"sd":0.4,"derivation":"reported mean/SD","technique":"Rigid metric ruler; 'one end of the ruler to maximally depress the pubic pad of fat via the pubic ramus at the base of the penis, the penis was fully stretched ","fatpad":"yes/anchored","source":"fulltext","concern":false,"pmid":"33244324","doi":"10.11604/pamj.2020.37.61.21123"},{"study":"Alaee2014","author":"Alaee","year":2014,"country":"Iran (Gorgan, Golestan)","region":"EMR","kind":"newborn","age_label":"term newborn (first day of life)","age_lo":0.0,"age_hi":0.0767,"age_mid":0.0082,"tanner":null,"n":166,"mean":3.18,"sd":0.39,"derivation":"reported mean/SD","technique":"'the penis was gently stretched to the point of maximum resistance and a ruler (VYCON) was pressed alongside the penis onto the pubic bone'; foreskin excluded; ","fatpad":"yes/anchored","source":"fulltext","concern":false,"pmid":"25763234","doi":"10.5812/ircmj.16729"},{"study":"Alaee2014","author":"Alaee","year":2014,"country":"Iran (Gorgan, Golestan)","region":"EMR","kind":"newborn","age_label":"term newborn (first day of life)","age_lo":0.0,"age_hi":0.0767,"age_mid":0.0082,"tanner":null,"n":129,"mean":3.23,"sd":0.33,"derivation":"reported mean/SD","technique":"'the penis was gently stretched to the point of maximum resistance and a ruler (VYCON) was pressed alongside the penis onto the pubic bone'; foreskin excluded; ","fatpad":"yes/anchored","source":"fulltext","concern":false,"pmid":"25763234","doi":"10.5812/ircmj.16729"},{"study":"Alaee2014","author":"Alaee","year":2014,"country":"Iran (Gorgan, Golestan)","region":"EMR","kind":"newborn","age_label":"term newborn (first day of life)","age_lo":0.0,"age_hi":0.0767,"age_mid":0.0082,"tanner":null,"n":132,"mean":3.24,"sd":0.33,"derivation":"reported mean/SD","technique":"'the penis was gently stretched to the point of maximum resistance and a ruler (VYCON) was pressed alongside the penis onto the pubic bone'; foreskin excluded; ","fatpad":"yes/anchored","source":"fulltext","concern":false,"pmid":"25763234","doi":"10.5812/ircmj.16729"},{"study":"AsafoAgyei2017","author":"Asafo-Agyei","year":2017,"country":"Ghana (Kumasi)","region":"AFR","kind":"newborn","age_label":"term newborn (<48 h)","age_lo":0.0,"age_hi":0.0767,"age_mid":0.0082,"tanner":null,"n":644,"mean":3.3,"sd":0.5,"derivation":"reported mean/SD","technique":"Disposable wooden spatula from pubic ramus along dorsum to tip of glans; 'stretched to the point of resistance and the suprapubic fat pad compressed as complete","fatpad":"yes/anchored","source":"fulltext","concern":false,"pmid":"28149308","doi":"10.1186/s13633-017-0042-1"},{"study":"Kutlu2010","author":"Kutlu","year":2010,"country":"Turkey (Ankara)","region":"EUR","kind":"newborn","age_label":"term newborn (first 24 h)","age_lo":0.0,"age_hi":0.0767,"age_mid":0.0082,"tanner":null,"n":514,"mean":3.77,"sd":0.35,"derivation":"reported mean/SD","technique":"Spatula along dorsum; 'maximal pressure was applied to the fatty tissue on the pubic ramus. Traction was applied to the penis to the point of increased resistan","fatpad":"yes/anchored","source":"fulltext","concern":false,"pmid":"21274323","doi":"10.4274/jcrpe.v2i3.107"},{"study":"Soheilipour2018","author":"Soheilipour","year":2018,"country":"Iran (Tehran)","region":"EMR","kind":"newborn","age_label":"term newborn (first 3 days (<72 h))","age_lo":0.0,"age_hi":0.0767,"age_mid":0.0082,"tanner":null,"n":203,"mean":2.592,"sd":0.154,"derivation":"reported mean/SD","technique":"Supine, legs flexed; 'the fat pad of symphysis pubis was pushed and measured from symphysis pubis to the tip of phallus glans in complete stretching by a digita","fatpad":"yes/anchored","source":"fulltext","concern":true,"pmid":"29780352","doi":"10.3389/fendo.2018.00126"},{"study":"Shah2020","author":"Shah","year":2020,"country":"USA (Philadelphia; IFED cohort)","region":"AMR","kind":"newborn","age_label":"term newborn (<72 h)","age_lo":0.0,"age_hi":0.0767,"age_mid":0.0082,"tanner":null,"n":null,"mean":3.5,"sd":0.5,"derivation":"reported mean/SD","technique":"Tongue depressor with measuring strip 'placed on the pubic symphysis above and immediately adjacent to the penis while firmly applying pressure against the bone","fatpad":"yes/anchored","source":"fulltext","concern":false,"pmid":"32396926","doi":"10.1038/s41390-020-0950-2"},{"study":"Shah2020","author":"Shah","year":2020,"country":"USA (Philadelphia; IFED cohort)","region":"AMR","kind":"newborn","age_label":"term newborn (<72 h)","age_lo":0.0,"age_hi":0.0767,"age_mid":0.0082,"tanner":null,"n":null,"mean":3.6,"sd":0.5,"derivation":"reported mean/SD","technique":"Tongue depressor with measuring strip 'placed on the pubic symphysis above and immediately adjacent to the penis while firmly applying pressure against the bone","fatpad":"yes/anchored","source":"fulltext","concern":false,"pmid":"32396926","doi":"10.1038/s41390-020-0950-2"},{"study":"Modekwe2023","author":"Modekwe","year":2023,"country":"Nigeria (Nnewi)","region":"AFR","kind":"newborn","age_label":"term newborn (4-28 days (mean 15.58 +- 5.73 days))","age_lo":0.0,"age_hi":0.0767,"age_mid":0.0082,"tanner":null,"n":224,"mean":3.66,"sd":0.58,"derivation":"reported mean/SD","technique":"Silk suture held at peno-pubic junction and drawn taut to tip of palpable glans with penis 'fully stretching ... without causing discomfort', then applied to a ","fatpad":"yes/anchored","source":"fulltext","concern":true,"pmid":"38784201","doi":"10.4314/ejhs.v33i4.15"},{"study":"Righi2026","author":"Righi","year":2026,"country":"Italy (Parma, Reggio Emilia, Cagliari; LIFE-MILCH)","region":"EUR","kind":"newborn","age_label":"term newborn (<72 h)","age_lo":0.0,"age_hi":0.0767,"age_mid":0.0082,"tanner":null,"n":208,"mean":2.44,"sd":0.683,"derivation":"reported mean/SD","technique":"Analogical caliper on dorsal surface 'with the caliper against the pubis. A gentle traction was applied along the length of the penis to a point of increased re","fatpad":"yes/anchored","source":"fulltext","concern":true,"pmid":"42625712","doi":"10.3389/fendo.2026.1838976"},{"study":"Roy2019","author":"Roy","year":2019,"country":"India (Kolkata, West Bengal)","region":"SEAR","kind":"newborn","age_label":"term newborn (1-3 days)","age_lo":0.0,"age_hi":0.0767,"age_mid":0.0082,"tanner":null,"n":36,"mean":2.4,"sd":0.4,"derivation":"reported mean/SD","technique":"Neonates: 'measured in the supine position by stretching the penis gently'; base of penis to tip of glans excluding prepuce (fat-pad compression described only ","fatpad":"yes/anchored","source":"fulltext","concern":true,"pmid":"31741898","doi":"10.4103/ijem.IJEM_51_19"},{"study":"Prabhu2014","author":"Prabhu","year":2014,"country":"India (Chennai, Tamil Nadu)","region":"SEAR","kind":"newborn","age_label":"term newborn (48 h to 10 days)","age_lo":0.0,"age_hi":0.0767,"age_mid":0.0082,"tanner":null,"n":346,"mean":2.83,"sd":0.49,"derivation":"reported mean/SD","technique":"'placing the end of a straight edge ruler against the pubic ramus applying traction along the length of the phallus to the point of increased resistance'; glans","fatpad":"yes/anchored","source":"fulltext","concern":false,"pmid":"25143923","doi":"10.4103/2230-8210.137500"},{"study":"Park2015","author":"Park","year":2015,"country":"Korea (Ulsan)","region":"WPR","kind":"newborn","age_label":"term newborn (newborn (neonatal unit); exact age not stated)","age_lo":0.0,"age_hi":0.0767,"age_mid":0.0082,"tanner":null,"n":24,"mean":3.3,"sd":0.2,"derivation":"reported mean/SD","technique":"Ruler 'compressing the fat tissue with one end of the ruler through the pubic ramus; then the penis was fully stretched'; foreskin excluded; mean of 2 measureme","fatpad":"yes/anchored","source":"fulltext","concern":false,"pmid":"25763130","doi":"10.4111/kju.2015.56.3.248"},{"study":"Meskele2022","author":"Meskele","year":2022,"country":"Ethiopia (Addis Ababa)","region":"AFR","kind":"newborn","age_label":"term newborn (first 72 h)","age_lo":0.0,"age_hi":0.0767,"age_mid":0.0082,"tanner":null,"n":221,"mean":3.28,"sd":0.42,"derivation":"reported mean/SD","technique":"not described in abstract","fatpad":"unclear","source":"abstract_only","concern":true,"pmid":"36040421","doi":"10.1111/apa.16533"},{"study":"Badawy2021","author":"Badawy","year":2021,"country":"Egypt (Cairo)","region":"EMR","kind":"newborn","age_label":"term newborn (first 7 days)","age_lo":0.0,"age_hi":0.0767,"age_mid":0.0082,"tanner":null,"n":500,"mean":3.16,"sd":0.41,"derivation":"reported mean/SD","technique":"not described in abstract","fatpad":"unclear","source":"abstract_only","concern":false,"pmid":"34369621","doi":"10.1111/jpc.15686"},{"study":"Adekoya2019","author":"Adekoya","year":2019,"country":"Nigeria (Sagamu)","region":"AFR","kind":"newborn","age_label":"term newborn (first 72 h)","age_lo":0.0,"age_hi":0.0767,"age_mid":0.0082,"tanner":null,"n":303,"mean":3.94,"sd":0.42,"derivation":"reported mean/SD","technique":"not described in abstract","fatpad":"unclear","source":"abstract_only","concern":false,"pmid":"31162733","doi":"10.1111/apa.14885"},{"study":"Kollurage2019","author":"Kollurage","year":2019,"country":"Sri Lanka (Colombo)","region":"SEAR","kind":"newborn","age_label":"term newborn (not stated (postnatal wards, stable newborns))","age_lo":0.0,"age_hi":0.0767,"age_mid":0.0082,"tanner":null,"n":369,"mean":3.03,"sd":0.37,"derivation":"reported mean/SD","technique":"not described in abstract","fatpad":"unclear","source":"abstract_only","concern":false,"pmid":"31055901","doi":"10.4038/cmj.v64i1.8823"},{"study":"Halil2017","author":"Halil","year":2017,"country":"Turkey (Ankara)","region":"EUR","kind":"newborn","age_label":"term newborn (first 3 days)","age_lo":0.0,"age_hi":0.0767,"age_mid":0.0082,"tanner":null,"n":249,"mean":3.2,"sd":0.551,"derivation":"reported mean/SD","technique":"'measured from the pubic ramus to the tip of the glans' (abstract)","fatpad":"yes/anchored","source":"abstract_only","concern":false,"pmid":"29376571","doi":"10.24953/turkjped.2017.03.006"},{"study":"Chikani2014","author":"Chikani","year":2014,"country":"Nigeria (Enugu, south-east)","region":"AFR","kind":"newborn","age_label":"term newborn (first 72 h)","age_lo":0.0,"age_hi":0.0767,"age_mid":0.0082,"tanner":null,"n":811,"mean":3.46,"sd":0.44,"derivation":"reported mean/SD","technique":"'measured using Schonfeld method'","fatpad":"unclear","source":"abstract_only","concern":false,"pmid":"25466913","doi":"10.1093/tropej/fmu064"},{"study":"Matsuo2014","author":"Matsuo","year":2014,"country":"Japan (Tokyo)","region":"WPR","kind":"newborn","age_label":"term newborn (1-7 days)","age_lo":0.0,"age_hi":0.0767,"age_mid":0.0082,"tanner":null,"n":547,"mean":3.06,"sd":0.26,"derivation":"reported mean/SD","technique":"not described in abstract","fatpad":"unclear","source":"abstract_only","concern":false,"pmid":"24931740","doi":"10.1507/endocrj.ej14-0069"},{"study":"ElKholy2013","author":"El Kholy","year":2013,"country":"Egypt (Cairo)","region":"EMR","kind":"newborn","age_label":"term newborn (not stated)","age_lo":0.0,"age_hi":0.0767,"age_mid":0.0082,"tanner":null,"n":1000,"mean":3.4,"sd":0.37,"derivation":"reported mean/SD","technique":"not described in abstract","fatpad":"unclear","source":"abstract_only","concern":false,"pmid":"23509209","doi":"10.1515/jpem-2012-0350"},{"study":"Akin2011","author":"Akin","year":2011,"country":"Turkey (Istanbul)","region":"EUR","kind":"newborn","age_label":"term newborn (not stated (live-borns in hospital))","age_lo":0.0,"age_hi":0.0767,"age_mid":0.0082,"tanner":null,"n":1217,"mean":3.16,"sd":0.39,"derivation":"reported mean/SD","technique":"not described in abstract","fatpad":"unclear","source":"abstract_only","concern":false,"pmid":"21980812","doi":""},{"study":"Camurdan2007","author":"Camurdan","year":2007,"country":"Turkey (Ankara)","region":"EUR","kind":"newborn","age_label":"term newborn (newborn (exact age not stated))","age_lo":0.0,"age_hi":0.0767,"age_mid":0.0082,"tanner":null,"n":165,"mean":3.65,"sd":0.27,"derivation":"reported mean/SD","technique":"not described in abstract","fatpad":"unclear","source":"abstract_only","concern":false,"pmid":"17905119","doi":"10.1016/j.urology.2007.04.051"},{"study":"Ting2009","author":"Ting","year":2009,"country":"Malaysia","region":"WPR","kind":"newborn","age_label":"term newborn (not stated)","age_lo":0.0,"age_hi":0.0767,"age_mid":0.0082,"tanner":null,"n":195,"mean":3.5,"sd":0.4,"derivation":"reported mean/SD","technique":"not described in abstract","fatpad":"unclear","source":"abstract_only","concern":false,"pmid":"19710983","doi":""},{"study":"AlHerbish2002","author":"Al-Herbish","year":2002,"country":"Saudi Arabia (Riyadh)","region":"EMR","kind":"newborn","age_label":"term newborn (not stated)","age_lo":0.0,"age_hi":0.0767,"age_mid":0.0082,"tanner":null,"n":379,"mean":3.55,"sd":0.57,"derivation":"reported mean/SD","technique":"'An unmarked spatula was used where its edge was placed against the pubic ramus and the shaft of the penis was stretched to the point of increased resistance.'","fatpad":"yes/anchored","source":"abstract_only","concern":false,"pmid":"11938424","doi":""},{"study":"SutanAssin1989","author":"Sutan-Assin","year":1989,"country":"Indonesia","region":"SEAR","kind":"newborn","age_label":"term newborn (not stated)","age_lo":0.0,"age_hi":0.0767,"age_mid":0.0082,"tanner":null,"n":336,"mean":2.86,"sd":0.23,"derivation":"reported mean/SD","technique":"not described in abstract","fatpad":"unclear","source":"abstract_only","concern":false,"pmid":"2812828","doi":""},{"study":"Semiz2011","author":"Semiz","year":2011,"country":"Turkey","region":"EUR","kind":"newborn","age_label":"term newborn (within 48 h)","age_lo":0.0,"age_hi":0.0767,"age_mid":0.0082,"tanner":null,"n":746,"mean":2.81,"sd":0.32,"derivation":"reported mean/SD","technique":"not described in abstract","fatpad":"unclear","source":"abstract_only","concern":true,"pmid":"22389989","doi":""},{"study":"Lian2000","author":"Lian","year":2000,"country":"Singapore","region":"WPR","kind":"newborn","age_label":"term newborn (first 3 days)","age_lo":0.0,"age_hi":0.0767,"age_mid":0.0082,"tanner":null,"n":null,"mean":3.6,"sd":0.4,"derivation":"reported mean/SD","technique":"'Stretched penile lengths were marked off on unmarked wooden spatulas, which were placed vertically along the dorsal aspect of the penis, with one rounded end o","fatpad":"yes/anchored","source":"abstract_only","concern":false,"pmid":"10689638","doi":"10.1515/jpem.2000.13.1.55"},{"study":"Vasudevan1995","author":"Vasudevan","year":1995,"country":"India (Pondicherry)","region":"SEAR","kind":"newborn","age_label":"term newborn (not stated)","age_lo":0.0,"age_hi":0.0767,"age_mid":0.0082,"tanner":null,"n":null,"mean":3.57,"sd":0.46,"derivation":"reported mean/SD","technique":"not described in abstract","fatpad":"unclear","source":"abstract_only","concern":false,"pmid":"10829928","doi":"10.1007/BF02761887"},{"study":"Boas2006","author":"Boas","year":2006,"country":"Denmark (Copenhagen) and Finland (Turku)","region":"EUR","kind":"newborn","age_label":"term newborn (birth (0-month examination))","age_lo":0.0,"age_hi":0.0767,"age_mid":0.0082,"tanner":null,"n":null,"mean":3.49,"sd":0.4,"derivation":"reported mean/SD","technique":"not described in abstract; a later report (Boncompagni 2023, PMC10938525) describes the Boas method as 'The penis was slightly straightened' (possibly not fully","fatpad":"unclear","source":"abstract_only","concern":false,"pmid":"16382001","doi":"10.1530/eje.1.02066"}]}</script>
+<script>
+(function () {
+  "use strict";
+  const M = JSON.parse(document.getElementById("model").textContent);
+  const C = M.age_model.curve;
+  const $ = (id) => document.getElementById(id);
+
+  // ---- statistics -------------------------------------------------------
+  function erf(x) { // Abramowitz & Stegun 7.1.26 refined with high-precision series for |x|<3
+    const s = Math.sign(x); x = Math.abs(x);
+    if (x < 3) { let sum = x, term = x, n = 0; do { n++; term *= -x * x / n; const add = term / (2 * n + 1); sum += add; if (Math.abs(add) < 1e-16) break; } while (n < 200); return s * 2 / Math.sqrt(Math.PI) * sum; }
+    const t = 1 / (1 + 0.3275911 * x); const y = 1 - (((((1.061405429 * t - 1.453152027) * t) + 1.421413741) * t - 0.284496736) * t + 0.254829592) * t * Math.exp(-x * x);
+    return s * y;
+  }
+  const Phi = (z) => 0.5 * (1 + erf(z / Math.SQRT2));
+  function interp(arr, age) {
+    const a = C.age; if (age <= a[0]) return arr[0]; if (age >= a[a.length - 1]) return arr[arr.length - 1];
+    const i = Math.min(a.length - 2, Math.floor((age - a[0]) / (a[1] - a[0])));
+    const f = (age - a[i]) / (a[i + 1] - a[i]); return arr[i] + f * (arr[i + 1] - arr[i]);
+  }
+  const fmt = (x, d = 2) => (x == null || !isFinite(x)) ? "–" : x.toFixed(d);
+  const fz = (z) => (z == null || !isFinite(z)) ? "–" : (z >= 0 ? "+" : "−") + Math.abs(z).toFixed(2);
+  function fpct(z) { if (z == null || !isFinite(z)) return "–"; const p = 100 * Phi(z); if (p < 0.1) return "<0.1"; if (p > 99.9) return ">99.9"; return p < 1 || p > 99 ? p.toFixed(1) : p.toFixed(0); }
+  function chip(z) {
+    if (z == null || !isFinite(z)) return "";
+    if (z < -2.5) return '<span class="chip crit">Below −2.5 SD · micropenis range</span>';
+    if (z < -2) return '<span class="chip warn">Low · −2.5 to −2 SD</span>';
+    if (z > 2) return '<span class="chip info">Above +2 SD</span>';
+    return '<span class="chip ok">Within ±2 SD</span>';
+  }
+  const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+  // ---- inputs -----------------------------------------------------------
+  function readInputs() {
+    const d = parseFloat($("ageD").value), y = parseFloat($("ageY").value), m = parseFloat($("ageM").value);
+    let age = null;
+    if (isFinite(d)) age = d / 365.25; else if (isFinite(y) || isFinite(m)) age = (isFinite(y) ? y : 0) + (isFinite(m) ? m : 0) / 12;
+    const spl = parseFloat($("spl").value);
+    const st = $("tanner").value ? parseInt($("tanner").value, 10) : null;
+    return { age, spl: isFinite(spl) ? spl : null, stage: st, fat: $("cFat").checked, obese: $("cObese").checked, early: $("cEarly").checked };
+  }
+
+  // ---- pooled references -------------------------------------------------
+  function pooledAge(age, spl) {
+    const ageMax = C.age[C.age.length - 1];
+    const covered = M.age_model.knots_t.length > 0 || age <= 28 / 365.25 + 1e-9;
+    if (!covered || age > ageMax) return null;
+    const mean = interp(C.mean, age), sd = interp(C.sd, age);
+    const plo = interp(C.pop_mean_pi_lo, age), phi = interp(C.pop_mean_pi_hi, age);
+    const z = (spl - mean) / sd;
+    return { mean, sd, z, cut: mean - 2.5 * sd, zLo: (spl - phi) / sd, zHi: (spl - plo) / sd, plo, phi };
+  }
+  function pooledTanner(stage, spl) {
+    const t = M.tanner_model["G" + stage]; if (!t) return null;
+    const z = (spl - t.mean) / t.sd;
+    return Object.assign({}, t, { z, cut: t.mean - 2.5 * t.sd,
+      zLo: t.pop_mean_pi_hi ? (spl - t.pop_mean_pi_hi) / t.sd : null, zHi: t.pop_mean_pi_lo ? (spl - t.pop_mean_pi_lo) / t.sd : null });
+  }
+  function studyRows(age, stage, spl) {
+    const tol = 1e-6;
+    return M.rows.filter((r) => {
+      const inAge = age >= r.age_lo - tol && age <= r.age_hi + tol;
+      if (r.tanner != null) return stage != null && r.tanner === stage && (r.age_lo == null || inAge || r.kind === "tanner");
+      return inAge;
+    }).map((r) => Object.assign({}, r, { z: r.sd ? (spl - r.mean) / r.sd : null }))
+      .sort((a, b) => (a.tanner != null) - (b.tanner != null) || (a.region || "").localeCompare(b.region || "") || a.mean - b.mean);
+  }
+
+  // ---- render -----------------------------------------------------------
+  function render() {
+    const I = readInputs();
+    const out = $("out");
+    if (I.age == null || I.spl == null) { out.innerHTML = '<p class="empty">Enter an age and a stretched penile length to see the result.</p>'; drawChart(I, null); fillTable([], I); return; }
+    const A = pooledAge(I.age, I.spl), T = I.stage ? pooledTanner(I.stage, I.spl) : null;
+    const rows = studyRows(I.age, I.stage, I.spl);
+    const ageTxt = I.age < 1 / 12 ? `${Math.round(I.age * 365.25)} days` : `${Math.floor(I.age)} y ${Math.round((I.age % 1) * 12)} mo`;
+    let h = "";
+    const primary = A || T;
+    if (primary) {
+      h += `<div class="headline">
+        <div class="stat"><span class="k">z-score ${A ? "(age)" : "(Tanner)"}</span><span class="v">${fz(primary.z)}</span><span class="s">${chip(primary.z)}</span></div>
+        <div class="stat"><span class="k">Centile</span><span class="v">${fpct(primary.z)}</span><span class="s">percent of boys measure shorter</span></div>
+        <div class="stat"><span class="k">Reference mean ± SD</span><span class="v">${fmt(primary.mean)} <small>± ${fmt(primary.sd)}</small></span><span class="s">−2.5 SD = ${fmt(primary.cut)} cm</span></div>
+      </div>`;
+    }
+    if (A) {
+      h += `<div class="refblock"><h3>Pooled age reference · ${esc(ageTxt)}</h3>
+        <p class="note">This is the random-effects pooled mean and within-population SD at this age, from ${M.age_model.k_studies} studies (${M.age_model.k_rows} age-group rows, n = ${M.age_model.n_total.toLocaleString()}).
+        Published populations differ in their mean. Across the 95% range of plausible population means (${fmt(A.plo)}–${fmt(A.phi)} cm), this child's z-score lies between <strong>${fz(A.zLo)}</strong> and <strong>${fz(A.zHi)}</strong>.</p></div>`;
+    } else {
+      h += `<div class="refblock"><h3>Pooled age reference</h3><p class="note">The pooled database does not cover this age yet. Use the study rows below where available.</p></div>`;
+    }
+    if (I.stage) {
+      if (T) {
+        h += `<div class="refblock"><h3>Tanner G${I.stage} reference ${chip(T.z)}</h3>
+          <p class="note">Mean ${fmt(T.mean)} ± ${fmt(T.sd)} cm (${T.k} rows, ${T.k_studies} studies, n = ${T.n.toLocaleString()}); z ${fz(T.z)}, centile ${fpct(T.z)}.
+          ${T.zLo != null ? `Across plausible populations: z ${fz(T.zLo)} to ${fz(T.zHi)}.` : "Only one study is available for this stage, so between-population spread cannot be estimated."}
+          Stage-based references ignore pubertal timing within a stage. Ages in the source data: ${fmt(T.age_range[0], 1)}–${fmt(T.age_range[1], 1)} y.</p></div>`;
+      } else {
+        h += `<div class="refblock"><h3>Tanner G${I.stage} reference</h3><p class="note">No published Tanner G${I.stage} data have been extracted yet.</p></div>`;
+      }
+    }
+    const al = [];
+    const zMin = primary ? primary.z : null;
+    if (zMin != null && zMin < -2) al.push(`<div class="alert ${zMin < -2.5 ? "crit" : ""}">At the −2.5 SD threshold a single measurement is unreliable. With realistic measurement error, about two-thirds of single-measurement "micropenis" labels are wrong. Confirm with a second trained examiner before you investigate.</div>`);
+    if (!I.fat) al.push('<div class="alert">Fat-pad depression is not confirmed. If the ruler was not pressed to the pubic bone, the length is underestimated, often by several millimetres in a child with obesity. Re-measure before you interpret.</div>');
+    if (I.obese) al.push('<div class="alert">BMI ≥ 95th centile: buried penis is a leading cause of unconfirmed micropenis referrals. Compare the length with the fat pad fully depressed and not depressed.</div>');
+    if (I.early && I.age <= 28 / 365.25) al.push('<div class="alert">Newborn measured in the first 24 h. Lengths at 1–12 h are 0.22–0.34 cm shorter than at 1–7 days (Matsuo 2014). Re-measure after 24 h.</div>');
+    if (I.age > 9 && !I.stage) al.push('<div class="alert">From about 9 years, SPL depends more on pubertal stage than on age. Enter the Tanner genital stage.</div>');
+    if (al.length) h += `<div class="alerts">${al.join("")}</div>`;
+    out.innerHTML = h;
+    drawChart(I, A);
+    fillTable(rows, I);
+  }
+
+  function fillTable(rows, I) {
+    const tb = $("tbl").querySelector("tbody");
+    if (!rows.length) { tb.innerHTML = `<tr><td colspan="8" class="empty">${I.age == null ? "Enter an age." : "No published rows cover this age" + (I.stage ? " and stage" : "") + " yet."}</td></tr>`; return; }
+    tb.innerHTML = rows.map((r) => {
+      const link = r.doi ? `https://doi.org/${encodeURI(r.doi)}` : (r.pmid ? `https://pubmed.ncbi.nlm.nih.gov/${encodeURIComponent(r.pmid)}/` : null);
+      const name = esc(r.author || r.study) + (r.year ? " " + r.year : "");
+      return `<tr>
+        <td>${link ? `<a href="${link}" target="_blank" rel="noopener">${name}</a>` : name}${r.concern ? " ⚠" : ""}<span class="sub">${esc(r.source)}</span></td>
+        <td>${esc(r.country)}<span class="sub">${esc(r.region)}</span></td>
+        <td>${esc(r.tanner != null ? "G" + r.tanner + (r.age_label ? " · " + r.age_label : "") : r.age_label)}</td>
+        <td class="num">${r.n ?? "–"}</td>
+        <td class="num">${fmt(r.mean)} ± ${r.sd != null ? fmt(r.sd) : "–"}<span class="sub">${esc(r.derivation)}</span></td>
+        <td class="num">${fz(r.z)}</td>
+        <td class="num">${fpct(r.z)}</td>
+        <td>${esc(r.fatpad)}<span class="sub">${esc((r.technique || "").slice(0, 90))}${(r.technique || "").length > 90 ? "…" : ""}</span></td></tr>`;
+    }).join("");
+  }
+
+  function drawChart(I, A) {
+    const svg = $("chart"), W = 760, H = 330, L = 46, R = 14, Tm = 12, B = 36;
+    const ages = C.age, maxAge = ages[ages.length - 1];
+    const has = M.age_model.knots_t.length > 0;
+    const xmax = has ? maxAge : 0.1;
+    const ymaxData = Math.max(...C.mean.map((m, i) => m + 3 * C.sd[i]), I.spl || 0);
+    const ymax = Math.ceil(ymaxData + 0.5), ymin = 0;
+    const x = (a) => L + (a / xmax) * (W - L - R), y = (v) => H - B - ((v - ymin) / (ymax - ymin)) * (H - B - Tm);
+    const band = (z1, z2) => { let d = ""; ages.forEach((a, i) => { if (a > xmax) return; d += (d ? "L" : "M") + x(a).toFixed(1) + "," + y(C.mean[i] + z2 * C.sd[i]).toFixed(1); });
+      for (let i = ages.length - 1; i >= 0; i--) { if (ages[i] > xmax) continue; d += "L" + x(ages[i]).toFixed(1) + "," + y(C.mean[i] + z1 * C.sd[i]).toFixed(1); } return d + "Z"; };
+    const line = (z) => { let d = ""; ages.forEach((a, i) => { if (a > xmax) return; d += (d ? "L" : "M") + x(a).toFixed(1) + "," + y(C.mean[i] + z * C.sd[i]).toFixed(1); }); return d; };
+    let g = "";
+    const ystep = ymax > 12 ? 3 : ymax > 6 ? 1 : 0.5;
+    for (let v = 0; v <= ymax + 1e-9; v += ystep) g += `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" stroke="var(--rule)" stroke-width="1"/><text x="${L - 6}" y="${y(v) + 4}" text-anchor="end">${v}</text>`;
+    const xstep = xmax > 10 ? 2 : xmax > 2 ? 1 : 0.02;
+    for (let a = 0; a <= xmax + 1e-9; a += xstep) g += `<text x="${x(a)}" y="${H - B + 16}" text-anchor="middle">${xmax > 2 ? a : Math.round(a * 365.25)}</text>`;
+    g += `<text x="${(L + W - R) / 2}" y="${H - 4}" text-anchor="middle">${xmax > 2 ? "Age (years)" : "Age (days)"}</text>`;
+    g += `<text x="12" y="${(H - B) / 2}" text-anchor="middle" transform="rotate(-90 12 ${(H - B) / 2})">SPL (cm)</text>`;
+    if (has) {
+      g += `<path d="${band(-2.5, 2.5)}" fill="var(--band2)"/><path d="${band(-2, 2)}" fill="var(--band1)"/>`;
+      g += `<path d="${line(0)}" fill="none" stroke="var(--curve)" stroke-width="2"/>`;
+      g += `<path d="${line(-2.5)}" fill="none" stroke="var(--crit)" stroke-width="1" stroke-dasharray="4 3"/>`;
+      g += `<text x="${W - R - 4}" y="${y(C.mean[C.mean.length - 1] - 2.5 * C.sd[C.sd.length - 1]) - 4}" text-anchor="end">−2.5 SD</text>`;
+    }
+    M.rows.filter((r) => r.tanner == null && r.sd && r.age_lo <= xmax).forEach((r) => {
+      const am = Math.min(xmax, r.age_mid != null ? r.age_mid : (r.age_lo + r.age_hi) / 2);
+      g += `<circle cx="${x(am)}" cy="${y(r.mean)}" r="2.6" fill="var(--ink-3)" opacity=".55"><title>${esc(r.author || r.study)} ${r.year || ""}: ${fmt(r.mean)} ± ${fmt(r.sd)} cm (${esc(r.age_label)})</title></circle>`;
+    });
+    if (I.age != null && I.spl != null && I.age <= xmax) g += `<circle cx="${x(I.age)}" cy="${y(I.spl)}" r="6" fill="var(--pt)" stroke="var(--card)" stroke-width="2"><title>This child: ${fmt(I.spl, 1)} cm</title></circle>`;
+    svg.innerHTML = g;
+    $("chartNote").textContent = has
+      ? "Pooled mean (line), ±2 SD (dark band) and ±2.5 SD (light band). Grey dots are published age-group means. The red point is this child."
+      : "The pooled database currently covers the newborn period only. Grey dots are the published newborn means.";
+  }
+
+  function methods() {
+    const am = M.age_model;
+    $("methods").innerHTML = `
+      <p><strong>Data.</strong> All values were extracted from published studies, each stored with the verbatim sentence or table cell it came from.
+        Points from published scatter plots are included only after validated digitisation: median point error 0.02 cm, bin-mean error ≤ 0.12 cm on known test data.
+        Database version ${esc(M.version)}: ${M.rows.length} reference rows.</p>
+      <p><strong>Conversions.</strong> Where a study reported percentiles, the SD was derived from the widest symmetric pair assuming normality.
+        Medians with IQR or range were converted with the Luo (2018) and Wan (2014) methods, and LMS parameters with SD ≈ M·S. Each row shows its derivation.</p>
+      <p><strong>Pooled age model.</strong> Random-effects meta-regression of ln(mean) on a natural cubic spline of ln(age + 0.25) (REML, Knapp–Hartung), and of ln(SD) on the same basis.
+        Between-study spread of means: τ = ${fmt(am.tau_log, 3)} on the log scale, about ${fmt(100 * am.tau_log, 0)}% of the mean. This spread is why a z-score range is shown alongside the point estimate.</p>
+      <p><strong>Tanner model.</strong> Random-effects pooled ln(mean) and ln(SD) for each genital stage.</p>
+      <p><strong>Limitations.</strong></p>
+      <ul>
+        <li>Published populations differ as much in their mean as children differ within a population, and most of that difference is local method rather than ancestry. A technique-matched local reference, where one exists, is preferable.</li>
+        <li>Within-population SDs include measurement error.</li>
+        <li>Many source studies did not describe fat-pad depression.</li>
+        <li>This calculator supports, and does not replace, clinical judgement. Confirm a low value with a second trained examiner.</li>
+      </ul>`;
+  }
+
+  // ---- boot: realistic example (clearly marked) --------------------------
+  const has = M.age_model.knots_t.length > 0;
+  if (has) { $("ageY").value = 7; $("ageM").value = 0; $("spl").value = 3.6; } else { $("ageD").value = 2; $("spl").value = 2.4; }
+  $("cFat").checked = true;
+  ["ageY", "ageM", "ageD", "tanner", "spl", "cFat", "cObese", "cEarly"].forEach((id) => $(id).addEventListener("input", () => { $("exampleNote").hidden = true; render(); }));
+  $("f").addEventListener("submit", (e) => e.preventDefault());
+  methods();
+  render();
+})();
+</script>
