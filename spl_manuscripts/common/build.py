@@ -12,7 +12,7 @@ import subprocess
 import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-TABLES = [os.path.join(HERE, "references_verified.md"), os.path.join(HERE, "references_verified_extra.md"), os.path.join(HERE, "references_included_P3P4.md"), os.path.join(HERE, "references_manual.md")]
+TABLES = [os.path.join(HERE, "references_verified.md"), os.path.join(HERE, "references_verified_extra.md"), os.path.join(HERE, "references_included_P3P4.md"), os.path.join(HERE, "references_included_P1.md"), os.path.join(HERE, "references_manual.md")]
 EXTRA_TABLES = []  # per-paper tables may be appended via --refs
 
 

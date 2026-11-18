@@ -39,7 +39,10 @@ def load():
     df = pd.read_csv(os.path.join(D, "term_extraction.csv"), dtype=str).fillna("")
     for c in ["n", "year", "mean_cm", "sd_cm", "median_cm", "q1_cm", "q3_cm", "min_cm", "max_cm", "se_cm"]:
         df[c] = num(df[c])
-    df["label"] = df.apply(lambda r: r["study_id"] + (f" ({r['subgroup_label']})" if r["subgroup_label"] else ""), axis=1)
+    PRINT_YEAR = {"Chikani2014": "Chikani 2015", "Badawy2021": "Badawy 2022", "Shah2020": "Shah 2021",
+                  "Nanda2023": "Nanda 2024", "Singal2015": "Singal 2016", "Jarrett2013": "Jarrett 2014"}
+    disp = lambda sid: PRINT_YEAR.get(sid, re.sub(r"(\D)(\d{4})$", r"\1 \2", sid))
+    df["label"] = df.apply(lambda r: disp(r["study_id"]) + (f" ({r['subgroup_label']})" if r["subgroup_label"] else ""), axis=1)
     return df
 
 
@@ -71,8 +74,27 @@ def derive(df):
     return out
 
 
+def apply_flags(df):
+    fl = pd.read_csv(os.path.join(D, "curation_flags.csv"), dtype=str).fillna("")
+    df["flags"] = ""
+    for _, f in fl.iterrows():
+        m = (df["study_id"] == f["study_id"]) & (df["subgroup_label"] == f["subgroup_label"])
+        if not m.any():
+            raise SystemExit(f"curation flag does not match any row: {f['study_id']} / {f['subgroup_label']}")
+        df.loc[m, "flags"] = df.loc[m, "flags"] + f["flag"] + ";"
+    df["mixed_ga"] = df["flags"].str.contains("mixed_ga")
+    df["concern"] = df["flags"].str.contains("measurement_concern")
+    return df
+
+
 def main():
-    df = derive(load())
+    df_all = apply_flags(derive(load()))
+    df_all.to_csv(os.path.join(D, "all_rows_with_flags.csv"), index=False)
+    PRIMARY = os.environ.get("P1_SET", "primary")
+    if PRIMARY == "primary":
+        df = df_all[~df_all["mixed_ga"]].copy()
+    else:
+        df = df_all.copy()
     usable = df[~df["mean"].isna() & ~df["n"].isna()].copy()
     usable["v_mean"] = usable["sd"] ** 2 / usable["n"]
     res = {"k_rows_extracted": int(len(df)), "k_rows_with_mean": int(len(usable))}
@@ -187,11 +209,22 @@ def main():
         "fatpad_explicit_only": usable["fatpad_explicit"] == 1,
         "n_ge_100": usable["n"] >= 100,
         "reported_mean_sd_only": usable["derivation"] == "reported",
+        "exclude_measurement_concern": ~usable["concern"],
+        "exclude_concern_and_abstract_only": (~usable["concern"]) & (usable["fulltext"] == 1),
     }.items():
         g = usable[mask]
         if len(g) >= 3:
             sens[name] = meta.random_effects(g["mean"], g["v_mean"], "REML", hksj=True).as_dict()
+    allu = df_all[~df_all["mean"].isna() & ~df_all["n"].isna()].copy()
+    allu["v_mean"] = allu["sd"].fillna(med_sd) ** 2 / allu["n"]
+    sens["including_mixed_GA_rows"] = meta.random_effects(allu["mean"], allu["v_mean"], "REML", hksj=True).as_dict()
+    sens["including_mixed_GA_rows"]["k_mixed_added"] = int(allu["mixed_ga"].sum())
     res["sensitivity"] = sens
+    res["k_rows_total_extracted"] = int(len(df_all))
+    res["k_rows_mixed_ga"] = int(df_all["mixed_ga"].sum())
+    res["k_rows_no_n"] = int(df_all["n"].isna().sum())
+    res["k_studies_primary"] = int(usable["study_id"].nunique())
+    res["n_primary"] = int(usable["n"].sum())
 
     with open(os.path.join(D, "results.json"), "w") as f:
         json.dump(res, f, indent=2, default=lambda x: float(x) if isinstance(x, (np.floating, np.integer)) else str(x))

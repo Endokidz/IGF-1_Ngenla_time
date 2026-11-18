@@ -1,0 +1,18 @@
+study_id,subgroup_label,flag,reason
+BustamanteMontes2013,,mixed_ga,GA not restricted to term; no SD reported
+Nanda2023,,mixed_ga,39.1% preterm (28-42 wk)
+Elusiyan2016,,mixed_ga,GA not stated in abstract
+Mondal2016,,mixed_ga,All births on study days; 24% non-term
+Singal2015,,mixed_ga,Consecutive newborns; GA not restricted
+Jarrett2013,,mixed_ga,>=28 weeks; mixed GA
+Shah2020,White,no_n,Subgroup n not in retrieved text
+Shah2020,African American,no_n,Subgroup n not in retrieved text
+Lian2000,full-term,no_n,Term subgroup n not stated in abstract
+Vasudevan1995,term,no_n,Term subgroup n not stated in abstract
+Boas2006,,no_n,Number measured at birth not stated in abstract; technique possibly 'slightly straightened'
+Soheilipour2018,term >=38 wk,measurement_concern,SD 1.54 mm implausibly small; internally inconsistent band table
+Righi2026,,measurement_concern,Gentle traction with caliper; SD 6.83 mm unusually large
+Roy2019,,measurement_concern,5% trimmed mean; n=36; median inconsistent between abstract and table
+Modekwe2023,,measurement_concern,Measured at 4-28 days with silk suture; fat-pad depression not described
+Semiz2011,,measurement_concern,Abstract does not state that the penis was stretched
+Meskele2022,,measurement_concern,Abstract prints no unit for the mean
