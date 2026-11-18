@@ -387,7 +387,9 @@ In children, obesity shortens measured penile length far more convincingly than 
 
 ## Figure legends
 
-**Figure 1.** PRISMA 2020 flow diagram (see Section 3.1 for counts).
+**Figure 1.** PRISMA 2020 flow diagram.
+
+![Figure 1](figures/Fig1_PRISMA.png)
 
 **Figure 2.** Effect-direction plot for the association between adiposity and penile length, by study design. Markers indicate the direction of effect:
 

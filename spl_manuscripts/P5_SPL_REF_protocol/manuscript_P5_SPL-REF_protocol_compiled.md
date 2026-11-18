@@ -91,7 +91,9 @@ SPL-REF is a prospective, multicentre observational study with three linked comp
 
 The study will be reported according to STROBE [12]. This protocol follows the structure recommended by SPIRIT where applicable to observational designs [13].
 
-**Figure 1.** Study schema: Components A–C, their sample sizes, measurement schedules and analytic outputs. The figure is to be drawn from the specifications in this section.
+**Figure 1.** Study schema: Components A–C, their sample sizes, measurement schedules and analytic outputs.
+
+![Figure 1](figures/Fig1_study_schema.png)
 
 ### 2.2 Setting and recruitment
 
