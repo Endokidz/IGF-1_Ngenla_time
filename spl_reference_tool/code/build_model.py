@@ -145,6 +145,13 @@ def load_rows():
         m, s, how = to_mean_sd(r)
         out.append(dict(mean=m, sd=s, derivation=how, age=age_mid(r)))
     rows = pd.concat([rows.reset_index(drop=True), pd.DataFrame(out)], axis=1)
+    cur_p = os.path.join(DATA, "tool_curation.csv")
+    if os.path.exists(cur_p):
+        cur = pd.read_csv(cur_p, dtype=str)
+        excl = set(cur.loc[cur.action == "exclude", "study_id"])
+        flag = set(cur.loc[cur.action == "flag", "study_id"])
+        rows = rows[~rows.study_id.isin(excl)].copy()
+        rows.loc[rows.study_id.isin(flag), "measurement_concern"] = True
     return rows
 
 
@@ -248,7 +255,7 @@ def main():
                      transform="t = ln(age_years + 0.25)", curve=curve)
 
     # ---- Tanner model
-    T = rows[rows.usable & rows.tanner_stage.notna()].copy()
+    T = rows[rows["mean"].notna() & rows["sd"].notna() & rows.tanner_stage.notna()].copy()
     if "tanner_system" in T:
         ts = T.tanner_system.fillna("").astype(str)
         g = T[ts.str.contains("G|genital", case=False) | ts.eq("") | ts.eq("nan")]
@@ -257,6 +264,15 @@ def main():
     for st in range(1, 6):
         s = T[T.tanner_stage == st]
         if len(s) == 0:
+            continue
+        n_known = s["n"].notna().all()
+        if not n_known:  # provisional: equal weights, between-study range shown instead of a PI
+            tanner[f"G{st}"] = dict(k=int(len(s)), k_studies=int(s.study_id.nunique()), n=None, provisional=True,
+                                    mean=float(np.exp(np.log(s["mean"]).mean())), sd=float(np.exp(np.log(s["sd"]).mean())),
+                                    ci_lo=None, ci_hi=None, pop_mean_pi_lo=float(s["mean"].min()) if len(s) > 1 else None,
+                                    pop_mean_pi_hi=float(s["mean"].max()) if len(s) > 1 else None, tau_log=None,
+                                    age_range=[float(np.nanmin(s.age)), float(np.nanmax(s.age))] if s.age.notna().any() else None,
+                                    studies=sorted(s.study_id.unique().tolist()))
             continue
         y, v = np.log(s["mean"]), (s["sd"] / s["mean"]) ** 2 / s["n"]
         ys, vs = np.log(s["sd"]) + 1 / (2 * (s["n"] - 1)), 1 / (2 * (s["n"] - 1))

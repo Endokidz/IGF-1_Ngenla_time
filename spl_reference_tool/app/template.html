@@ -262,9 +262,10 @@ td.z-info { background: var(--accent-soft); color: var(--accent); font-weight: 6
     if (I.stage) {
       if (T) {
         h += `<div class="refblock"><h3>Tanner G${I.stage} reference ${chip(T.z)}</h3>
-          <p class="note">Mean ${fmt(T.mean)} ± ${fmt(T.sd)} cm (${T.k} rows, ${T.k_studies} studies, n = ${T.n.toLocaleString()}); z ${fz(T.z)}, centile ${fpct(T.z)}.
-          ${T.zLo != null ? `Across plausible populations: z ${fz(T.zLo)} to ${fz(T.zHi)}.` : "Only one study is available for this stage, so between-population spread cannot be estimated."}
-          Stage-based references ignore pubertal timing within a stage. Ages in the source data: ${fmt(T.age_range[0], 1)}–${fmt(T.age_range[1], 1)} y.</p></div>`;
+          <p class="note">Mean ${fmt(T.mean)} ± ${fmt(T.sd)} cm from ${T.k_studies} stud${T.k_studies > 1 ? "ies" : "y"}${T.n ? `, n = ${T.n.toLocaleString()}` : ""}; z ${fz(T.z)}, centile ${fpct(T.z)}.
+          ${T.provisional ? `<strong>Provisional.</strong> The source studies did not report n per stage, so this is an equal-weight average. ` : ""}
+          ${T.zLo != null ? `${T.provisional ? "Across the published study means" : "Across plausible populations"}: z ${fz(T.zLo)} to ${fz(T.zHi)}.` : "Only one study is available for this stage, so the spread between populations cannot be estimated."}
+          Stage-based references ignore pubertal timing within a stage.${T.age_range ? ` Ages in the source data: ${fmt(T.age_range[0], 1)}–${fmt(T.age_range[1], 1)} y.` : ""}</p></div>`;
       } else {
         h += `<div class="refblock"><h3>Tanner G${I.stage} reference</h3><p class="note">No published Tanner G${I.stage} data have been extracted yet.</p></div>`;
       }

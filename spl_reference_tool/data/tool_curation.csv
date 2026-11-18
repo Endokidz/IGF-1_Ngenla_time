@@ -1,0 +1,4 @@
+study_id,action,reason
+Foresta2012_Italy,exclude,"Mean 8.9 cm at 18-19 y is ~3.6 cm below stretched median at same age (Ponchietti 2001); almost certainly flaccid, not SPL"
+Soydan2012_Turkey,exclude,"Abstract gives n and mean age per stage but no SPL values; full text needed (download list)"
+Sotos2017_USA,flag,"Gentle stretch from pubopenile skin, fat pad not depressed; sample mixes healthy and endocrine-clinic boys; values expected to run low"
