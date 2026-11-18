@@ -41,6 +41,16 @@ This file lets a fresh session pick up the work from where it stopped.
 - **Tanner model:** still provisional. Soydan 2012 has not been received. Gunter/De Win is pubic-hair staged. Gabrich's staging system is unspecified, and Sotos and Jaiswal give no n.
 - **Code fix:** in `build_model.py`, the Tanner-system filter `contains("G|genital", case=False)` matched any letter "g". It is now anchored to `^(genital|G\b)`.
 
+
+## Batch 2 (2026-11-18): Fok 2005
+
+- **Fok 2005 (15665508)** is added to `P1_newborn_SPL_meta/data/term_extraction.csv`: n = 4,628, 3.0 ± 0.4 cm, pubic ramus, within 48 h. P1 `analysis.py`, `within_country.py` and the figures have been re-run.
+  - Pooled mean: 3.20 → 3.19 cm.
+  - −2.5 SD threshold: 2.26 → 2.25 cm.
+  - WPR subgroup: n goes from 766 to 5,394.
+- **The P1 manuscript text is now STALE.** About 40 hard-coded numbers no longer match `results.json`. Update the text in one pass once Boas 2006, Romano-Riquer 2007 and Feldman 1975 arrive. Also remove Fok from the 'not retrievable' list on line 11.
+- The duplicate uploads of Ishii 2014 (×2) and Fok 2005 (×2) are byte-identical.
+
 ## Next task: add the papers the user supplies
 
 The user has the missing PDFs. These are the PMIDs in `DOWNLOAD_LIST.md` and its addendum:
