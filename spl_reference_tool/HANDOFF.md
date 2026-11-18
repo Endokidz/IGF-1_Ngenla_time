@@ -30,8 +30,8 @@ This file lets a fresh session pick up the work from where it stopped.
 
 | File | Status |
 |---|---|
-| Tomova 2010 (21135345) | Table extracted (20 rows, n = 310 each). **Flagged, not pooled**: the fat pad is not depressed (pubopenile skin junction). This is pending the author's decision; if pooled, tau_log rises from 0.135 to 0.150. Kumanov 2007 is excluded as a duplicate of its 0-y stratum. |
-| Gabrich 2007 (17676248) | Tabela 2 has 19 age rows, with n from Tabela 1. Tabela 3 gives Tanner 2-5, but the staging system is not stated, so these rows are excluded from the genital model by the fixed regex. The second-hand quotes stay excluded. |
+| Tomova 2010 (21135345) | Table extracted (20 rows, n = 310 each). **Flagged, not pooled**: the fat pad is not depressed (pubopenile skin junction). The author confirmed this on 2026-11-18; if pooled, tau_log rises from 0.135 to 0.150. Kumanov 2007 is excluded as a duplicate of its 0-y stratum. |
+| Gabrich 2007 (17676248) | Tabela 2 has 19 age rows, with n from Tabela 1. Tabela 3 gives Tanner 2-5, but the staging system is not stated (the author confirmed it is unknown), so these rows are excluded from the genital model by the fixed regex. The second-hand quotes stay excluded. |
 | Ishii 2014 (25471079) | 10 LMS rows, one per raw age band, with n from Table 1. The birth row is excluded (newborn; overlaps Matsuo 2014). |
 | De Win 2026 (43023809), the "Gunter 2026" of the download list | Table 1 healthy controls by **pubic-hair** stage. Flagged: implausible SDs, fat pad not depressed. Fig. 2E is not digitised. |
 | Schonfeld 1942 | The upload contains only p. 759 (title page and references), with no data. The remaining pages (760-777) are still needed. |

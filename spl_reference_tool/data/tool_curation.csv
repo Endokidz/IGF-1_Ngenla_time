@@ -23,4 +23,4 @@ Roy2019_IND,Neonates,exclude,"Newborn row already included via the newborn meta-
 Kumanov2007_BGR,,exclude,"Duplicate cohort: identical to the 0-y stratum of Tomova 2010 (3.55 +/- 0.46 cm, n = 310, same Bulgarian 6,200-boy survey)"
 Ishii2014_JPN,Birth,exclude,"Newborn row handled by the newborn meta-analysis; probable overlap with Matsuo 2014 (same Keio group, Tokyo)"
 DeWin2026_BEL,,flag,"Pubic-hair (not genital) staging; fat pad not depressed; SDs implausibly large (TSP1 5.56 +/- 3.66 cm); n basis ambiguous"
-Tomova2010_BGR,(Table),flag,"Fat pad not depressed (pubopenile skin junction): measures a different quantity from pubic-bone SPL; runs ~10-35% below fat-pad-depressed studies, widening tau_log from 0.087 to 0.150 if pooled. Shown, not pooled (same rule as Sotos 2017 and De Win 2026); pending author decision"
+Tomova2010_BGR,(Table),flag,"Fat pad not depressed (pubopenile skin junction): measures a different quantity from pubic-bone SPL; runs ~10-35% below fat-pad-depressed studies, widening tau_log from 0.087 to 0.150 if pooled. Shown, not pooled (same rule as Sotos 2017 and De Win 2026); confirmed by the author 2026-11-18"
