@@ -73,6 +73,8 @@ details { background: var(--card); border: 1px solid var(--rule); border-radius:
 summary { cursor: pointer; font-weight: 600 }
 details p, details li { font-size: .9rem; color: var(--ink-2); max-width: 80ch }
 .empty { color: var(--ink-3); font-size: .9rem }
+.agebar { margin: 0 0 4px; font-size: .95rem; color: var(--ink-2) }
+.agebar strong { color: var(--ink); font-family: var(--f-num) }
 .sds { display: grid; gap: 4px }
 .sds svg { width: 100%; height: auto; max-width: 100% }
 .sds svg text { font-size: 10.5px }
@@ -98,7 +100,7 @@ td.z-info { background: var(--accent-soft); color: var(--accent); font-weight: 6
           <label for="ageY">Age, years<input id="ageY" type="number" min="0" max="18" step="1" inputmode="numeric"></label>
           <label for="ageM">+ months<input id="ageM" type="number" min="0" max="11" step="1" inputmode="numeric"></label>
         </div>
-        <label for="ageD">or newborn age, days <span class="hint">overrides years/months when filled</span><input id="ageD" type="number" min="0" max="28" step="1" inputmode="numeric"></label>
+        <label for="ageD">or newborn age, days <span class="hint">0–28 days; filling this clears years/months, and vice versa</span><input id="ageD" type="number" min="0" max="28" step="1" inputmode="numeric"></label>
         <label for="tanner">Tanner genital stage
           <select id="tanner">
             <option value="">Not assessed / prepubertal infant</option>
@@ -203,11 +205,19 @@ td.z-info { background: var(--accent-soft); color: var(--accent); font-weight: 6
   // ---- inputs -----------------------------------------------------------
   function readInputs() {
     const d = parseFloat($("ageD").value), y = parseFloat($("ageY").value), m = parseFloat($("ageM").value);
-    let age = null;
-    if (isFinite(d)) age = d / 365.25; else if (isFinite(y) || isFinite(m)) age = (isFinite(y) ? y : 0) + (isFinite(m) ? m : 0) / 12;
+    let age = null, src = null, err = null;
+    if (isFinite(d)) { src = "days"; if (d < 0 || d > 28) err = "Newborn age must be 0–28 days. For older children, clear the days field and enter years and months."; else age = d / 365.25; }
+    else if (isFinite(y) || isFinite(m)) {
+      src = "ym"; const yy = isFinite(y) ? y : 0, mm = isFinite(m) ? m : 0;
+      if (yy < 0 || mm < 0 || mm > 11) err = "Enter years ≥ 0 and months 0–11.";
+      else if (yy + mm / 12 > 18) err = "The calculator covers birth to 18 years. Check the age entered.";
+      else age = yy + mm / 12;
+    }
     const spl = parseFloat($("spl").value);
+    let splErr = null;
+    if (isFinite(spl) && (spl < 0.5 || spl > 25)) splErr = "Stretched penile length must be between 0.5 and 25 cm. Check the value and its unit (cm, not mm).";
     const st = $("tanner").value ? parseInt($("tanner").value, 10) : null;
-    return { age, spl: isFinite(spl) ? spl : null, stage: st, fat: $("cFat").checked, obese: $("cObese").checked, early: $("cEarly").checked };
+    return { age, src, err: err || splErr, spl: isFinite(spl) && !splErr ? spl : null, stage: st, fat: $("cFat").checked, obese: $("cObese").checked, early: $("cEarly").checked };
   }
 
   // ---- pooled references -------------------------------------------------
@@ -241,11 +251,12 @@ td.z-info { background: var(--accent-soft); color: var(--accent); font-weight: 6
   function render() {
     const I = readInputs();
     const out = $("out");
+    if (I.err) { out.innerHTML = `<div class="alert crit">${esc(I.err)}</div>`; drawChart({ age: null, spl: null }, null); fillTable([], { age: null }); return; }
     if (I.age == null || I.spl == null) { out.innerHTML = '<p class="empty">Enter an age and a stretched penile length to see the result.</p>'; drawChart(I, null); fillTable([], I); return; }
     const A = pooledAge(I.age, I.spl), T = I.stage ? pooledTanner(I.stage, I.spl) : null;
     const rows = studyRows(I.age, I.stage, I.spl);
     const ageTxt = I.age < 1 / 12 ? `${Math.round(I.age * 365.25)} days` : `${Math.floor(I.age)} y ${Math.round((I.age % 1) * 12)} mo`;
-    let h = "";
+    let h = `<p class="agebar">Calculated for: <strong>${I.src === "days" ? "newborn, " + esc(ageTxt) : esc(ageTxt)}</strong>${I.stage ? ` · Tanner G${I.stage}` : ""} · SPL <strong>${fmt(I.spl)} cm</strong></p>`;
     const primary = A || T;
     if (primary) {
       h += `<div class="headline">
@@ -276,6 +287,7 @@ td.z-info { background: var(--accent-soft); color: var(--accent); font-weight: 6
     }
     const al = [];
     const zMin = primary ? primary.z : null;
+    if (zMin != null && Math.abs(zMin) > 5) al.push(`<div class="alert crit">A z-score of ${fz(zMin)} is implausible. Check the age (years vs newborn days) and the length (cm).</div>`);
     if (zMin != null && zMin < -2) al.push(`<div class="alert ${zMin < -2.5 ? "crit" : ""}">At the −2.5 SD threshold a single measurement is unreliable. With realistic measurement error, about two-thirds of single-measurement "micropenis" labels are wrong. Confirm with a second trained examiner before you investigate.</div>`);
     if (A && A.kLocal != null && A.kLocal <= 2) al.push(`<div class="alert">Sparse data: at this age the pooled curve rests on ${A.kLocal} stud${A.kLocal === 1 ? "y" : "ies"}. Weigh the study-by-study rows below as heavily as the pooled value.</div>`);
     if (!I.fat) al.push('<div class="alert">Fat-pad depression is not confirmed. If the ruler was not pressed to the pubic bone, the length is underestimated, often by several millimetres in a child with obesity. Re-measure before you interpret.</div>');
@@ -368,7 +380,13 @@ td.z-info { background: var(--accent-soft); color: var(--accent); font-weight: 6
   const has = M.age_model.knots_t.length > 0;
   if (has) { $("ageY").value = 7; $("ageM").value = 0; $("spl").value = 3.6; } else { $("ageD").value = 2; $("spl").value = 2.4; }
   $("cFat").checked = true;
-  ["ageY", "ageM", "ageD", "tanner", "spl", "cFat", "cObese", "cEarly"].forEach((id) => $(id).addEventListener("input", () => { $("exampleNote").hidden = true; render(); }));
+  const onEdit = (id) => () => {
+    $("exampleNote").hidden = true;
+    if ((id === "ageY" || id === "ageM") && $(id).value !== "") $("ageD").value = "";   // years/months entered: newborn days no longer apply
+    if (id === "ageD" && $("ageD").value !== "") { $("ageY").value = ""; $("ageM").value = ""; }
+    render();
+  };
+  ["ageY", "ageM", "ageD", "tanner", "spl", "cFat", "cObese", "cEarly"].forEach((id) => { $(id).addEventListener("input", onEdit(id)); $(id).addEventListener("change", onEdit(id)); });
   $("f").addEventListener("submit", (e) => e.preventDefault());
   methods();
   render();
