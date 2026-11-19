@@ -1,0 +1,23 @@
+arm,group,group_label,n,change,sd_change,derivation,include_primary,reason,pre,post,source_level,v
+Lambert2025,INF_GN,Gonadotropin replacement in infancy (CHH),11,3.4181818181818184,1.4620657863572226,IPD (Table 4),True,,1.718181818181818,5.136363636363637,fulltext,0.1943305785123967
+MesasArostegui2024,INF_GN,Gonadotropin replacement in infancy (CHH),9,2.1584166666666667,0.7735821888416647,median/IQR->mean/SD; r=0.29,True,,2.16725,4.325666666666667,fulltext,0.06649215587700678
+Papadimitriou2019,INF_GN,Gonadotropin replacement in infancy (CHH),10,1.8207826469429067,0.4484794942800178,median/range->mean/SD; r=0.29,True,,2.0,3.8207826469429067,fulltext,0.020113385678966055
+Stoupa2017,INF_GN,Gonadotropin replacement in infancy (CHH),5,2.88,0.565696010036978,"pre/post SDs, r=0.29",True,,1.38,4.26,abstract_only,0.06400239515435134
+Wang2025,INF_GN,Gonadotropin replacement in infancy (CHH),7,1.1600000000000001,0.9684183038293882,"pre/post SDs, r=0.29",True,,1.27,2.43,fulltext,0.13397628731311276
+Harada2025,T_CHILD,"Testosterone (IM), infancy/childhood",37,1.3046013513513515,0.501296281278052,median/IQR of change -> mean/SD,True,,2.2,3.5,fulltext,0.006791836800627132
+Karrou2023_TE,T_CHILD,"Testosterone (IM), infancy/childhood",22,1.82,1.270455620517471,"pre/post SDs, r=0.29",True,,3.0,4.8,fulltext,0.07336624925929237
+Kohva2019,T_CHILD,"Testosterone (IM), infancy/childhood",5,1.2,0.6582927168281668,"pre/post SDs, r=0.29",True,,1.7,2.9,fulltext,0.08666986020580181
+Luo2003,T_CHILD,"Testosterone (IM), infancy/childhood",25,0.3999999999999999,0.2633170867312667,"pre/post SDs, r=0.29",True,,1.98,2.38,abstract_only,0.002773435526585657
+Karrou2023_DHT,DHT,Dihydrotestosterone gel,27,2.37,1.038178710884766,"pre/post SDs, r=0.29",True,,2.9,5.3,fulltext,0.039919075397568685
+Xu2017,DHT,Dihydrotestosterone gel,23,1.22,0.6842398929702287,"pre/post SDs, r=0.29",True,,1.68,2.9,abstract_only,0.02035583613617
+Liu2021_5ARD,ORAL_TU,Oral testosterone undecanoate (DSD/hypospadias),90,0.8999999999999999,0.7763304846781507,"pre/post SDs, r=0.29",True,,1.9,2.8,fulltext,0.00669654468267347
+Liu2024_PAIS,ORAL_TU,Oral testosterone undecanoate (DSD/hypospadias),41,0.40000000000000036,0.846970413678314,"pre/post SDs, r=0.29",True,,2.3,2.7,abstract_only,0.01749655808893694
+Chen2015,ORAL_TU,Oral testosterone undecanoate (DSD/hypospadias),34,1.06,0.53,change SD reported,True,,,,abstract_only,0.008261764705882354
+Sheng2025,HCG_CHILD,"hCG ± hMG, childhood IHH",32,0.871875,0.9802022092240671,IPD (paired),True,,2.4781250000000004,3.35,fulltext,0.030024886592741933
+Wen2023_5ARD,ORAL_TU,Oral testosterone undecanoate (DSD/hypospadias),60,1.4000000000000001,0.7076747561476893,"pre/post SDs, r=0.29",False,R1 overlap with Liu2021_5ARD (smaller),1.66,3.06,fulltext,0.008346726008144857
+Wen2026_PAIS,ORAL_TU,Oral testosterone undecanoate (DSD/hypospadias),25,0.75,0.5286875624403755,"pre/post SDs, r=0.29",False,R1 overlap with Liu2024_PAIS (smaller),2.13,2.88,fulltext,0.011180421547165838
+Liu2021_CHH_hCGhMG,HCG_ADOL,HCG_ADOL,20,2.2,1.6,change SD reported,False,R2 erect length,,,fulltext,0.12800000000000003
+Liu2021_CHH_GnRH,GNRH_ADOL,GNRH_ADOL,21,1.0,0.8,change SD reported,False,R2 erect length,,,fulltext,0.030476190476190483
+Kim2011,HCG_ADOL,HCG_ADOL,20,2.04,1.8717479805443187,"pre/post SDs, r=0.29",False,R2 adult-majority cohort (mean 18.9 y),5.41,7.45,fulltext,0.17517202513358676
+Agarwal2020_T,T_ADOL,T_ADOL,12,2.7700000000000005,,unpaired,False,R2 unpaired pre/post subsets,,,fulltext,
+Tack2023_pubertalTRT,T_ADOL,T_ADOL,7,4.2,1.3,change SD reported,False,R2 pubertal induction (anorchia),,,fulltext,0.24142857142857146

@@ -1,0 +1,52 @@
+study_id,patient_id,diagnosis,age_months,intervention_class,pre_cm,post_cm,notes
+Lambert2025,P1,CPHD,5,rGn_infusion,1.5,5,Table 4 SPL (mm) before/after CSGI = 15/50; early adolescence SPL 50 mm; CSGI duration 24 weeks (Table 1); cm = reported mm/10
+Lambert2025,P2,CPHD,10,rGn_infusion,1,7,Table 4 SPL (mm) before/after CSGI = 10/70; early adolescence SPL 70 mm; CSGI duration 24 weeks (Table 1); cm = reported mm/10
+Lambert2025,P3,CPHD,11,rGn_infusion,2,4.5,Table 4 SPL (mm) before/after CSGI = 20/45; early adolescence SPL 55 mm; CSGI duration 20 weeks (Table 1); cm = reported mm/10
+Lambert2025,P4,CPHD,3,rGn_infusion,2,7,Table 4 SPL (mm) before/after CSGI = 20/70; early adolescence SPL 60 mm; CSGI duration 24 weeks (Table 1); cm = reported mm/10
+Lambert2025,P5,IHH,4.5,rGn_infusion,1.5,6,Table 4 SPL (mm) before/after CSGI = 15/60; early adolescence SPL 45 mm; CSGI duration 24 weeks (Table 1); cm = reported mm/10
+Lambert2025,P6,IHH,2.5,rGn_infusion,1.3,6,Table 4 SPL (mm) before/after CSGI = 13/60; early adolescence SPL 70 mm; CSGI duration 24 weeks (Table 1); cm = reported mm/10
+Lambert2025,P7,IHH,2.5,rGn_infusion,1.9,5,Table 4 SPL (mm) before/after CSGI = 19/50; early adolescence SPL 50 mm; CSGI duration 24 weeks (Table 1); cm = reported mm/10
+Lambert2025,P8,IHH,3,rGn_infusion,1,3,Table 4 SPL (mm) before/after CSGI = 10/30; early adolescence SPL 45 mm; CSGI duration 24 weeks (Table 1); cm = reported mm/10
+Lambert2025,P9,IHH,4,rGn_infusion,1.8,3,Table 4 SPL (mm) before/after CSGI = 18/30; early adolescence SPL 40 mm; CSGI duration 24 weeks (Table 1); cm = reported mm/10
+Lambert2025,P10,IHH,6,rGn_infusion,2.5,5,Table 4 SPL (mm) before/after CSGI = 25/50; early adolescence SPL 60 mm; CSGI duration 24 weeks (Table 1); cm = reported mm/10
+Lambert2025,P11,IHH,2,rGn_infusion,2.4,5,Table 4 SPL (mm) before/after CSGI = 24/50; early adolescence SPL 45 mm; CSGI duration 16 weeks (Table 1); cm = reported mm/10
+Sheng2025,P1,IHH,,hCG,1,2.5,Table 4: treatment 'HCG'; follow-up 1.50 years; penile length (cm) as printed
+Sheng2025,P2,IHH,,hCG,1,4,Table 4: treatment 'HCG'; follow-up 6.92 years; penile length (cm) as printed
+Sheng2025,P4,IHH,,other,1,3,Table 4: treatment 'HCG + HMG'; follow-up 3.16 years; penile length (cm) as printed
+Sheng2025,P5,IHH,,hCG,,2.2,Table 4: treatment 'HCG'; follow-up 6.83 years; penile length (cm) as printed; value reported as 'Unknown'
+Sheng2025,P6,IHH,,hCG,1,2.5,Table 4: treatment 'HCG'; follow-up 1.33 years; penile length (cm) as printed
+Sheng2025,P7,IHH,,hCG,1.4,2,Table 4: treatment 'HCG'; follow-up 1.67 years; penile length (cm) as printed
+Sheng2025,P9,IHH,,hCG,1.8,1.8,Table 4: treatment 'HCG'; follow-up 0.84 years; penile length (cm) as printed
+Sheng2025,P11,IHH,,other,1.3,1.7,Table 4: treatment 'HCG + HMG'; follow-up 5.83 years; penile length (cm) as printed
+Sheng2025,P12,IHH,,hCG,1.4,1.5,Table 4: treatment 'HCG'; follow-up 0.83 years; penile length (cm) as printed
+Sheng2025,P15,IHH,,hCG,1,2,Table 4: treatment 'HCG'; follow-up 5.25 years; penile length (cm) as printed
+Sheng2025,P18,IHH,,hCG,2.3,2.6,Table 4: treatment 'HCG'; follow-up 2.59 years; penile length (cm) as printed
+Sheng2025,P19,IHH,,hCG,3.5,3.5,Table 4: treatment 'HCG'; follow-up 0.59 years; penile length (cm) as printed
+Sheng2025,P20,IHH,,hCG,2.5,2.5,Table 4: treatment 'HCG'; follow-up 0.33 years; penile length (cm) as printed
+Sheng2025,P22,IHH,,other,2,2.5,Table 4: treatment 'HCG + TU'; follow-up 2.42 years; penile length (cm) as printed
+Sheng2025,P24,IHH,,hCG,2.5,3,Table 4: treatment 'HCG'; follow-up 5.00 years; penile length (cm) as printed
+Sheng2025,P25,IHH,,hCG,3,5.6,Table 4: treatment 'HCG'; follow-up 5.67 years; penile length (cm) as printed
+Sheng2025,P27,IHH,,hCG,2.8,3.5,Table 4: treatment 'HCG'; follow-up 1.17 years; penile length (cm) as printed
+Sheng2025,P28,IHH,,other,3.3,4,Table 4: treatment 'HCG + TU'; follow-up 3.17 years; penile length (cm) as printed
+Sheng2025,P30,IHH,,other,2.5,4.5,Table 4: treatment 'HCG + HMG'; follow-up 2.92 years; penile length (cm) as printed
+Sheng2025,P31,IHH,,other,2.5,2.5,Table 4: treatment 'HCG + HMG + TU'; follow-up 2.58 years; penile length (cm) as printed
+Sheng2025,P33,IHH,,hCG,3,3,Table 4: treatment 'HCG'; follow-up 3.75 years; penile length (cm) as printed
+Sheng2025,P34,IHH,,hCG,4,4,Table 4: treatment 'HCG'; follow-up 1.25 years; penile length (cm) as printed
+Sheng2025,P36,IHH,,hCG,1.5,3,Table 4: treatment 'HCG'; follow-up 1.67 years; penile length (cm) as printed
+Sheng2025,P38,IHH,,hCG,3.5,4.5,Table 4: treatment 'HCG'; follow-up 3.50 years; penile length (cm) as printed
+Sheng2025,P40,IHH,,hCG,2,2,Table 4: treatment 'HCG'; follow-up 4.00 years; penile length (cm) as printed
+Sheng2025,P42,IHH,,other,5,5,Table 4: treatment 'HCG transitioning to GnRH'; follow-up 1.17 years; penile length (cm) as printed
+Sheng2025,P43,IHH,,hCG,2,4.5,Table 4: treatment 'HCG'; follow-up 2.67 years; penile length (cm) as printed
+Sheng2025,P45,IHH,,hCG,,,Table 4: treatment 'HCG'; follow-up 1.75 years; penile length (cm) as printed; value reported as 'Unknown'
+Sheng2025,P46,IHH,,other,3.5,4,Table 4: treatment 'HCG + HMG + TU'; follow-up 3.33 years; penile length (cm) as printed
+Sheng2025,P47,IHH,,hCG,3,3,Table 4: treatment 'HCG'; follow-up 0.17 years; penile length (cm) as printed
+Sheng2025,P48,IHH,,other,4,6,Table 4: treatment 'HCG + HMG + TU'; follow-up 2.75 years; penile length (cm) as printed
+Sheng2025,P49,IHH,,hCG,3,3,Table 4: treatment 'HCG'; follow-up 1.00 years; penile length (cm) as printed
+Sheng2025,P50,IHH,,other,3,6,Table 4: treatment 'HCG + TU transitioning to GnRH'; follow-up 3.34 years; penile length (cm) as printed
+Sheng2025,P51,IHH,,other,4,4,Table 4: treatment 'HCG + TU transitioning to GnRH'; follow-up 2.67 years; penile length (cm) as printed
+Stoupa2017,PAIS,PAIS,,rGn_infusion,1.3,3.8,"abstract: 'in the patient with PAIS, SPL was increased from 13 to 38 mm'; age not stated (early infancy)"
+Becker2016,pre-pubertal,PAIS (AR p.L712F),,DHT,2.5,3.5,abstract: 'SPL changed from 2.5 cm to 3.5 cm (+40%)'; 4-month daily DHT gel 2.5% 0.3 mg/kg; exact age not stated
+Becker2016,peri-pubertal,PAIS (AR p.L712F),,DHT,3.5,5.7,abstract: '3.5 cm to 5.7 cm (+63%)'; exact age not stated
+Tack2023,Participant1_infancy,"bilateral testicular regression, DHX37 p.Arg308Gln",2,IM_T,1.5,3.0,"Table 6: SPL 15 mm at presentation; after Sustanon 50 mg/month x6 doses + DHT creme daily 2 months: 'Little effect: SPL 30 mm'; single patient within cohort, IM T plus DHT"
+Tack2023,Participant1_puberty,"bilateral testicular regression, DHX37 p.Arg308Gln",,IM_T,3.0,5.7,"Table 6: puberty induction from 12.5 years (incremental Sustanon); SPL at start HRT 30 mm, at last visit 57 mm (1.5 years on HRT, Tanner G3)"
+Tack2023,Participant3_puberty,"bilateral testicular regression, DHX37 p.Arg334Trp",,IM_T,3.5,5.6,"Table 6: puberty induction from 13.7 years; SPL at start HRT 35 mm, at last visit 56 mm (2.9 years on HRT). Infant course (Sustanon 25 mg/2 weeks x6 + DHT 2 months) 'SPL 20 mm, no growth' - pre value not measured, so infancy row omitted"
