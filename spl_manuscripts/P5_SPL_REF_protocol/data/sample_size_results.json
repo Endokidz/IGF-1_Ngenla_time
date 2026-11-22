@@ -1,0 +1,215 @@
+{
+  "centile_precision": {
+    "ratio_minus2p5_vs_2nd": 1.1518757780705722,
+    "targets": {
+      "0.08": {
+        "n_for_2nd_centile": 4681,
+        "n_for_minus2p5SD": 6211
+      },
+      "0.1": {
+        "n_for_2nd_centile": 2996,
+        "n_for_minus2p5SD": 3975
+      },
+      "0.12": {
+        "n_for_2nd_centile": 2081,
+        "n_for_minus2p5SD": 2761
+      }
+    }
+  },
+  "N_analysable": 4000,
+  "N_enrol": 4500,
+  "naive_per_window_n_SE0.10": 413,
+  "age_allocation_lambda0.75": [
+    {
+      "band": "0-1 mo",
+      "proportion": 0.017748419562396457,
+      "n": 71
+    },
+    {
+      "band": "1-6 mo",
+      "proportion": 0.05029296218158071,
+      "n": 201
+    },
+    {
+      "band": "6-12 mo",
+      "proportion": 0.04639012625086271,
+      "n": 186
+    },
+    {
+      "band": "1-2 y",
+      "proportion": 0.07801858173503537,
+      "n": 312
+    },
+    {
+      "band": "2-5 y",
+      "proportion": 0.19017471804703023,
+      "n": 761
+    },
+    {
+      "band": "5-9 y",
+      "proportion": 0.2119787497244551,
+      "n": 848
+    },
+    {
+      "band": "9-11 y",
+      "proportion": 0.09657480666604237,
+      "n": 386
+    },
+    {
+      "band": "11-13 y",
+      "proportion": 0.09225693461412969,
+      "n": 369
+    },
+    {
+      "band": "13-15 y",
+      "proportion": 0.08876065071188873,
+      "n": 355
+    },
+    {
+      "band": "15-18 y",
+      "proportion": 0.12780405050657864,
+      "n": 511
+    }
+  ],
+  "age_allocation_with_pubertal_oversampling": [
+    {
+      "band": "0-1 mo",
+      "proportion": 0.017748419562396457,
+      "n": 71,
+      "n_with_pubertal_oversampling": 71
+    },
+    {
+      "band": "1-6 mo",
+      "proportion": 0.05029296218158071,
+      "n": 201,
+      "n_with_pubertal_oversampling": 201
+    },
+    {
+      "band": "6-12 mo",
+      "proportion": 0.04639012625086271,
+      "n": 186,
+      "n_with_pubertal_oversampling": 186
+    },
+    {
+      "band": "1-2 y",
+      "proportion": 0.07801858173503537,
+      "n": 312,
+      "n_with_pubertal_oversampling": 312
+    },
+    {
+      "band": "2-5 y",
+      "proportion": 0.19017471804703023,
+      "n": 761,
+      "n_with_pubertal_oversampling": 761
+    },
+    {
+      "band": "5-9 y",
+      "proportion": 0.2119787497244551,
+      "n": 848,
+      "n_with_pubertal_oversampling": 848
+    },
+    {
+      "band": "9-11 y",
+      "proportion": 0.09657480666604237,
+      "n": 386,
+      "n_with_pubertal_oversampling": 483
+    },
+    {
+      "band": "11-13 y",
+      "proportion": 0.09225693461412969,
+      "n": 369,
+      "n_with_pubertal_oversampling": 462
+    },
+    {
+      "band": "13-15 y",
+      "proportion": 0.08876065071188873,
+      "n": 355,
+      "n_with_pubertal_oversampling": 444
+    },
+    {
+      "band": "15-18 y",
+      "proportion": 0.12780405050657864,
+      "n": 511,
+      "n_with_pubertal_oversampling": 511
+    }
+  ],
+  "N_analysable_with_oversampling": 4279,
+  "neonatal_precision": [
+    {
+      "n": 500,
+      "se_mean_cm": 0.01788854381999832,
+      "ci95_halfwidth_mean_cm": 0.035061545887196705,
+      "se_minus2p5SD_cm": 0.0363318042491699,
+      "ci95_halfwidth_minus2p5SD_cm": 0.07121033632837301
+    },
+    {
+      "n": 750,
+      "se_mean_cm": 0.01460593486680443,
+      "ci95_halfwidth_mean_cm": 0.02862763233893668,
+      "se_minus2p5SD_cm": 0.029664793948382652,
+      "ci95_halfwidth_minus2p5SD_cm": 0.05814299613883
+    },
+    {
+      "n": 1000,
+      "se_mean_cm": 0.012649110640673518,
+      "ci95_halfwidth_mean_cm": 0.024792256855720094,
+      "se_minus2p5SD_cm": 0.025690465157330263,
+      "ci95_halfwidth_minus2p5SD_cm": 0.050353311708367314
+    },
+    {
+      "n": 1500,
+      "se_mean_cm": 0.010327955589886445,
+      "ci95_halfwidth_mean_cm": 0.02024279295617743,
+      "se_minus2p5SD_cm": 0.020976176963403034,
+      "ci95_halfwidth_minus2p5SD_cm": 0.04111330684826994
+    }
+  ],
+  "minipuberty_corr": {
+    "r=0.2_power=0.8": 194,
+    "r=0.2_power=0.9": 259,
+    "r=0.25_power=0.8": 124,
+    "r=0.25_power=0.9": 165,
+    "r=0.3_power=0.8": 85,
+    "r=0.3_power=0.9": 113
+  },
+  "minipuberty_n_enrol_20pct_attrition": 155,
+  "reliability_icc": {
+    "bonett_rho=0.80_k=3_w=0.10": 140,
+    "bonett_rho=0.90_k=3_w=0.10": 42,
+    "bonett_rho=0.90_k=3_w=0.08": 64,
+    "walter_rho0=0.75_rho1=0.90_k=3": 19,
+    "walter_rho0=0.80_rho1=0.90_k=3": 33
+  },
+  "error_sd_ci_multipliers": {
+    "n=30_k=3": [
+      0.8487097389269327,
+      1.217435597992403
+    ],
+    "n=60_k=3": [
+      0.8879060780061584,
+      1.1447423529903236
+    ],
+    "n=100_k=3": [
+      0.9108656351486152,
+      1.1086229830520862
+    ],
+    "n=240_k=3": [
+      0.9405485032718428,
+      1.0675354009652427
+    ]
+  },
+  "LoA_ci_halfwidth_in_sdiff_units": {
+    "30": 0.6198064213930023,
+    "60": 0.43826932358995874,
+    "100": 0.3394819582834999,
+    "240": 0.21913466179497937
+  },
+  "fat_pad_slope_n_(s_x=1.2_power0.90)": {
+    "beta=0.1cm_per_BMI-SDS_sr=0.4cm": 119,
+    "beta=0.1cm_per_BMI-SDS_sr=0.6cm": 265,
+    "beta=0.15cm_per_BMI-SDS_sr=0.4cm": 54,
+    "beta=0.15cm_per_BMI-SDS_sr=0.6cm": 119,
+    "beta=0.2cm_per_BMI-SDS_sr=0.4cm": 32,
+    "beta=0.2cm_per_BMI-SDS_sr=0.6cm": 68
+  }
+}

@@ -1,0 +1,16 @@
+study,n,outcome,fatpad,design,direction,source
+Lee 2024,1499.0,SPL,Yes,Group comparison,-1.0,Full text
+Mancini 2021,1130.0,Non-stretched length,No,Group comparison,-1.0,Abstract
+Zhang 2013,206.0,Non-stretched length,Unclear,Group comparison*,-1.0,Abstract (Chinese)
+Zhang 2015,3546.0,Penile length,Unclear,Group comparison,-1.0,Abstract (Chinese)
+Han 2026,60.0,Penile length,Unclear,Group comparison,-1.0,Abstract
+Zhang 1997,,Penile length,Unclear,Group comparison,1.0,Abstract (Chinese)
+Camurdan 2007,1040.0,SPL (raw),Unclear,Correlation,1.0,Abstract
+Fawaz 2021,2972.0,SPL z-score,Unclear,Correlation,1.0,Abstract
+Ishii 2014,1628.0,SPL z-score,Unclear,Correlation,0.0,Abstract
+Roy 2019,460.0,SPL,Yes,Correlation,0.0,Full text
+Bhat 2015,250.0,SPL,Unclear,Correlation,0.0,Full text
+Joya 2026,210.0,SPL,Unclear,Correlation,0.0,Abstract
+Arian 2025,300.0,SPL,Unclear,Correlation,0.0,Abstract
+Soydan 2012,1539.0,Penile length,Unclear,Regression,,Abstract
+Ma 2025 (weight loss),120.0,SPL,Unclear,Before-after,-1.0,Abstract (Chinese)
