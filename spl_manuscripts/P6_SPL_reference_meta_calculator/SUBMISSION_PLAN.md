@@ -49,6 +49,23 @@ So we need both of the following:
 
 Adding **original data** (external validation on your clinic's measurements) settles the question beyond doubt: the paper becomes a development-and-validation study.
 
+### Tentative decision (2026-11-22, author's rule: a high-IF Q1 journal before a low-IF Q1 journal)
+
+| Step | Journal | JIF ✱ | Format to write to | If rejected |
+|---|---|---|---|---|
+| **1. Primary target** | **JAMA Pediatrics**, Original Investigation | ~17 | 3,000 words, ≤5 tables/figures, Key Points box, ~350-word structured abstract | Desk decisions are fast (1–2 weeks) → step 2 |
+| 2 | Lancet Child & Adolescent Health, Article ✱ (confirm that meta-analyses run as Articles) | ~13–20 | ~4,500 words, 30 references, research-in-context panel | → step 3 |
+| 3 | Human Reproduction, original-research format | ~6.8 | Extended structured abstract | → step 4 |
+| 4. Safe landing | Journal of Pediatrics, Original Article | ~3.6 | ≤4,000 words including the abstract | — |
+
+- **Write the first draft to JAMA Pediatrics' format.** It is the shortest, and expanding a draft later is easier than cutting one.
+- **European Journal of Endocrinology** (~5–6) enters at step 3 only if your clinic's validation data are added, which makes it an Original Research Article.
+- **eClinicalMedicine** (~10) enters at step 2 only if a grant pays the ~US$5,000 article fee, which TAU does not cover.
+
+**Honest odds.** At steps 1–2, acceptance depends on two things: the "technique, not time" finding against Negri being clear-cut, and ideally external validation. Without them, expect step 3 or 4. Each rejection adds roughly 2–4 weeks for reformatting.
+
+✱ Every JIF and quartile is to be verified in JCR (bit PI-08) and confirmed with the TAU library (PI-08b).
+
 ### Shortlist (cascade)
 
 Quartiles marked ✱ must be verified in JCR (bit PI-08).

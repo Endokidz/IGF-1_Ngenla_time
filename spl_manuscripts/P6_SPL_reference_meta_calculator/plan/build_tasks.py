@@ -124,6 +124,7 @@ def simulate(pi_per_day, res_per_weekday, start=dt.date(2026, 11, 23), ai_lag=1)
                 nxt = next((t for t in T if t["owner"] == own and t["id"] not in done and ready(t)), None)
                 if nxt: done[nxt["id"]] = day
         day += 1
+    simulate.last = {k: start + dt.timedelta(days=v) for k, v in done.items()}
     return day, start + dt.timedelta(days=day)
 
 
@@ -133,6 +134,14 @@ if __name__ == "__main__":
         for t in T: w.writerow({**t, "status": "todo"})
     n = {o: sum(1 for t in T if t["owner"] == o) for o in ("PI", "Resident", "AI")}
     print(f"bits: PI {n['PI']} (~{sum(t['minutes'] for t in T if t['owner']=='PI')/60:.1f} h), resident {n['Resident']} h, AI steps {n['AI']}")
+    simulate(1, 1)                                    # base scenario -> planned date per task for the supervisor
+    with open(os.path.join(HERE, "schedule.csv"), "w", newline="") as f:
+        w = csv.writer(f); w.writerow(["id", "owner", "phase", "title", "planned_date_base"])
+        for t in sorted(T, key=lambda t: simulate.last[t["id"]]):
+            w.writerow([t["id"], t["owner"], t["phase"], t["title"], simulate.last[t["id"]].isoformat()])
+    ph = {}
+    for t in T: ph[t["phase"]] = max(ph.get(t["phase"], simulate.last[t["id"]]), simulate.last[t["id"]])
+    print("milestones (base):", "; ".join(f"{k} done {v:%d %b %Y}" for k, v in sorted(ph.items())))
     for lab, p, r in [("base: PI 1 bit/day, resident 1 h/weekday", 1, 1), ("PI 2 bits/day, resident 1 h/weekday", 2, 1),
                       ("PI 1 bit/day, resident 2 h/weekday", 1, 2), ("PI 2 bits/day, resident 2 h/weekday", 2, 2)]:
         d, end = simulate(p, r)
