@@ -41,6 +41,7 @@ async function calc(page, { hours, unit, value }) {
   const err = await page.locator("[role=alert]").count() ? await page.locator("[role=alert]").innerText() : null;
   if (err) return { err };
   return { adjusted: await page.locator("[data-k=adjusted]").innerText(), factor: await page.locator("[data-k=factor]").innerText(),
+           hours: await page.locator("[data-k=hours]").innerText(), interval: await page.locator("[data-k=interval]").innerText(),
            text: await page.locator("#result").innerText() };
 }
 
@@ -92,6 +93,11 @@ async function calc(page, { hours, unit, value }) {
   }
   let r = await calc(page, { hours: 100, unit: "sds", value: -1.5 });
   check("Day-4 note shown at 100 h", /optimal 96-108 hour range/.test(r.text || ""));
+  r = await calc(page, { hours: 12.5, unit: "ngml", value: 100 });
+  check("12.5 h is shown as completed hours (12 hours) with the interval actually used (>12 - 24 hours)",
+        r.hours === "12 hours" && r.interval === ">12 - 24 hours" && r.factor === "× 1.3", `${r.hours} / ${r.interval} / ${r.factor}`);
+  r = await calc(page, { hours: 1.5, unit: "ngml", value: 100 });
+  check("1.5 h is shown as 1 hour (singular)", r.hours === "1 hour", r.hours);
   r = await calc(page, { hours: 168, unit: "sds", value: 0 });
   check("168 h rejected", /between 0 and 168 hours/.test(r.err || ""));
   r = await calc(page, { hours: 0, unit: "sds", value: 0 });
@@ -117,11 +123,17 @@ async function calc(page, { hours, unit, value }) {
     await p.fill("#measurement-date", "2026-06-14"); await p.fill("#measurement-time", "10:00");
     await p.check("input[name=unit] >> nth=1"); await p.fill("#measured-value", "-1");
     await p.click("text=Calculate");
-    check(`${tz}: 10 Jun 08:00 -> 14 Jun 10:00 = 98.0 h`, (await p.locator("[data-k=hours]").innerText()) === "98.0 hours");
+    check(`${tz}: 10 Jun 08:00 -> 14 Jun 10:00 = 98 h`, (await p.locator("[data-k=hours]").innerText()) === "98 hours");
     await p.fill("#injection-date", "2026-06-14"); await p.fill("#injection-time", "08:00");
     await p.fill("#measurement-date", "2026-06-14"); await p.fill("#measurement-time", "20:00");
     await p.click("text=Calculate");
-    check(`${tz}: same-day 08:00 -> 20:00 = 12.0 h`, (await p.locator("[data-k=hours]").innerText()) === "12.0 hours");
+    check(`${tz}: same-day 08:00 -> 20:00 = 12 h`, (await p.locator("[data-k=hours]").innerText()) === "12 hours");
+    await p.fill("#measurement-time", "20:58");
+    await p.click("text=Calculate");
+    const h1258 = { hours: await p.locator("[data-k=hours]").innerText(), interval: await p.locator("[data-k=interval]").innerText(),
+                    factor: await p.locator("[data-k=factor]").innerText() };
+    check(`${tz}: 12 h 58 min is shown as 12 hours; interval >12 - 24 hours (+0.7)`,
+          h1258.hours === "12 hours" && h1258.interval === ">12 - 24 hours" && h1258.factor === "+0.7", JSON.stringify(h1258));
     await p.fill("#measurement-time", "07:00");
     await p.click("text=Calculate");
     check(`${tz}: measurement before injection is rejected`, /must be after injection/.test(await p.locator("[role=alert]").innerText()));
@@ -134,7 +146,7 @@ async function calc(page, { hours, unit, value }) {
   await ny.page.fill("#measurement-date", "2026-03-09"); await ny.page.fill("#measurement-time", "12:00");
   await ny.page.fill("#measured-value", "100");
   await ny.page.click("text=Calculate");
-  check("New York across DST start: elapsed time is 47.0 h (real hours, not clock hours)", (await ny.page.locator("[data-k=hours]").innerText()) === "47.0 hours");
+  check("New York across DST start: elapsed time is 47 h (real hours, not clock hours)", (await ny.page.locator("[data-k=hours]").innerText()) === "47 hours");
   await ny.ctx.close();
 
   // Elapsed time must be real hours, which can move a sample into a different adjustment bin.
@@ -147,7 +159,8 @@ async function calc(page, { hours, unit, value }) {
     await p.fill("#measurement-date", meas[0]); await p.fill("#measurement-time", meas[1]);
     await p.check("input[name=unit] >> nth=0"); await p.fill("#measured-value", "100");
     await p.click("text=Calculate");
-    const out = { hours: await p.locator("[data-k=hours]").innerText(), factor: await p.locator("[data-k=factor]").innerText() };
+    const out = { hours: await p.locator("[data-k=hours]").innerText(), factor: await p.locator("[data-k=factor]").innerText(),
+                  interval: await p.locator("[data-k=interval]").innerText() };
     dstErrors.push(...o.errors);
     await o.ctx.close();
     return out;
@@ -155,15 +168,15 @@ async function calc(page, { hours, unit, value }) {
   // Israel DST began Fri 27 Mar 2026 at 02:00: 98 clock hours, 97 real hours. (The original parser also got this
   // one right east of UTC, so it guards against regressions; the Los Angeles case below is the one it failed.)
   let d = await dst("Asia/Jerusalem", ["2026-03-26", "08:00"], ["2026-03-30", "10:00"]);
-  check("Jerusalem across DST start: 26 Mar 08:00 -> 30 Mar 10:00 = 97.0 h", d.hours === "97.0 hours", d.hours);
+  check("Jerusalem across DST start: 26 Mar 08:00 -> 30 Mar 10:00 = 97 h", d.hours === "97 hours", d.hours);
   d = await dst("Asia/Jerusalem", ["2026-03-26", "09:30"], ["2026-03-30", "10:00"]);
-  check("Jerusalem across DST start: 26 Mar 09:30 -> 30 Mar 10:00 = 95.5 h, ×0.9 (clock hours would give 96.5 h, ×1.0)",
-        d.hours === "95.5 hours" && d.factor === "× 0.9", `${d.hours} / ${d.factor}`);
+  check("Jerusalem across DST start: 26 Mar 09:30 -> 30 Mar 10:00 = 95.5 h -> shown 95 h, >84 - 96, ×0.9 (clock hours: 96.5 h, ×1.0)",
+        d.hours === "95 hours" && d.interval === ">84 - 96 hours" && d.factor === "× 0.9", `${d.hours} / ${d.interval} / ${d.factor}`);
   // US DST began Sun 8 Mar 2026. The original new Date('YYYY-MM-DD') parser read 8 Mar as 7 Mar west of UTC,
   // pulling the DST change out of the interval: 95.5 h (×0.9) instead of 96.5 h (×1.0).
   d = await dst("America/Los_Angeles", ["2026-03-08", "10:30"], ["2026-03-12", "11:00"]);
-  check("Los Angeles, injection on DST-start day: 8 Mar 10:30 -> 12 Mar 11:00 = 96.5 h, ×1 (original parser: 95.5 h, ×0.9)",
-        d.hours === "96.5 hours" && d.factor === "× 1", `${d.hours} / ${d.factor}`);
+  check("Los Angeles, injection on DST-start day: 8 Mar 10:30 -> 12 Mar 11:00 = 96.5 h -> shown 96 h, >96 - 108, ×1 (original parser: 95.5 h, ×0.9)",
+        d.hours === "96 hours" && d.interval === ">96 - 108 hours" && d.factor === "× 1", `${d.hours} / ${d.interval} / ${d.factor}`);
   check("DST cases: no script errors", dstErrors.length === 0, dstErrors.join(" | "));
 
   console.log("Phone width");

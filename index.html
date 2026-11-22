@@ -94,6 +94,7 @@ const IGF1Calculator = () => {
 
       if (hours > lowerHours && hours <= upperHours) {
         return {
+          interval: adjustment.interval,
           sdsAdjustment: adjustment.sdsAdjustment,
           ngmlMultiplier: adjustment.ngmlMultiplier
         };
@@ -129,7 +130,7 @@ const IGF1Calculator = () => {
         hours = calculateHoursBetween(injDate, measDate);
       }
 
-      const { sdsAdjustment, ngmlMultiplier } = getAdjustmentFactors(hours);
+      const { interval, sdsAdjustment, ngmlMultiplier } = getAdjustmentFactors(hours);
 
       const measuredVal = parseFloat(measuredValue);
       if (isNaN(measuredVal)) {
@@ -150,8 +151,11 @@ const IGF1Calculator = () => {
       setResult({
         measuredValue: measuredVal,
         adjustedValue: adjustedValue.toFixed(2),
-        hours: hours.toFixed(1),
+        // Shown as completed hours (12 h 58 min -> 12). The interval is still chosen from the
+        // exact elapsed time, so 12 h 58 min falls in >12 - 24 hours; the interval is shown too.
+        hours: Math.floor(hours),
         hoursNum: hours,
+        interval,
         unit: measurementUnit === 'ngml' ? 'ng/mL' : 'SDS',
         adjustmentFactor: measurementUnit === 'ngml' ?
           `× ${ngmlMultiplier}` :
@@ -373,7 +377,10 @@ const IGF1Calculator = () => {
           <h2 className="text-lg font-semibold text-green-800 mb-2">Results</h2>
           <div className="grid grid-cols-2 gap-2">
             <div className="text-gray-600">Time after injection:</div>
-            <div className="font-medium" data-k="hours">{result.hours} hours</div>
+            <div className="font-medium" data-k="hours">{result.hours} {result.hours === 1 ? 'hour' : 'hours'}</div>
+
+            <div className="text-gray-600">Adjustment interval:</div>
+            <div className="font-medium" data-k="interval">{result.interval}</div>
 
             <div className="text-gray-600">Measured IGF-1:</div>
             <div className="font-medium">{result.measuredValue} {result.unit}</div>
