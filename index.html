@@ -229,9 +229,10 @@ const IGF1Calculator = () => {
             className="w-full p-2 border rounded-md"
             value={hoursSinceInjection}
             onChange={(e) => setHoursSinceInjection(e.target.value)}
-            placeholder="Enter hours (1-168)"
-            min="1"
+            placeholder="Enter hours (more than 0, less than 168)"
+            min="0"
             max="168"
+            step="any"
           />
         </div>
       ) : (
