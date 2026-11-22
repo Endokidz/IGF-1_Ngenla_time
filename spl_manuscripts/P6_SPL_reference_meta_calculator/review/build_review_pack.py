@@ -119,7 +119,9 @@ def main():
          "Genital stage is partly defined by penile size (circular); testis volume is objective and measured by every endocrinologist."],
         ["M8", "Population (region) results", "report any region with data / only regions with >= 3 studies at that age, else descriptive", ">= 3 studies",
          "With 1-2 studies, region and measurement method cannot be separated."],
-        ["M9", "Reviewers and adjudication", "name Reviewer A, Reviewer B and an adjudicator", "", "Required for PRISMA items 8-9."],
+        ["M9", "Reviewers and adjudication", "two humans / author + independent AI (validated) / AI only",
+         "author + independent AI, human adjudicator", "Two AI passes are not independent and leave no human judgement; the 2025 Cochrane/Campbell/JBI/CEE statement allows AI as a reviewer if justified, validated on this review (>=95% sensitivity on a 200-record calibration set) and fully reported. See AI_SCREENING_PROTOCOL.md."],
+        ["M10", "Screening eligibility criteria", "approve as drafted in AI_SCREENING_PROTOCOL.md / edit", "approve", "Both reviewers must apply the same frozen criteria; the AI run cannot start before this."],
     ]
     # ---------------- write workbook ----------------
     wb = Workbook()
