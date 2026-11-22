@@ -35,6 +35,7 @@ from scipy.optimize import minimize_scalar
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.join(HERE, "..")
 sys.path.insert(0, os.path.join(ROOT, "..", "spl_manuscripts", "common"))
+sys.path.insert(0, HERE)
 import meta  # noqa: E402
 
 DATA = os.path.join(ROOT, "data")
@@ -57,6 +58,9 @@ def to_mean_sd(r):
         return mean, sd, "reported mean/SD"
     if pd.notna(mean) and pd.notna(r.get("se_cm", np.nan)) and pd.notna(n):
         return mean, r["se_cm"] * math.sqrt(n), "SD from SE"
+    lo2, hi2 = r.get("minus2sd_cm"), r.get("plus2sd_cm")
+    if pd.notna(mean) and pd.notna(lo2) and pd.notna(hi2) and hi2 > lo2:
+        return mean, (hi2 - lo2) / 4, "SD from reported mean \u00b1 2 SD limits"
     # symmetric percentile pairs (widest available)
     for p in (3, 5, 10, 25):
         lo, hi = r.get(f"p{p}_cm"), r.get(f"p{100 - p}_cm")
@@ -137,7 +141,7 @@ def age_mid(r):
 
 NUMCOLS = ["n", "mean_cm", "sd_cm", "se_cm", "median_cm", "p3_cm", "p5_cm", "p10_cm", "p25_cm", "p50_cm", "p75_cm",
            "p90_cm", "p95_cm", "p97_cm", "min_cm", "max_cm", "lms_L", "lms_M", "lms_S", "age_lo_years", "age_hi_years",
-           "age_mean_years", "tanner_stage", "year"]
+           "age_mean_years", "tanner_stage", "year", "minus2sd_cm", "plus2sd_cm"]
 
 
 def read(path, kind):
@@ -258,10 +262,140 @@ def predict(model, Xnew):
 
 
 # ---------------------------------------------------------------------------
-# 3. Build
+# 3. Pubertal-stage references
+# ---------------------------------------------------------------------------
+
+# Each staging system is a different scale and is pooled separately. Soydan 2012's "genital stage" is a
+# testis-volume class, so it is its own system (TV), not Marshall-Tanner G.
+STAGE_SYSTEMS = {
+    "G": dict(label="Tanner genital stage", prefix="G"),
+    "PH": dict(label="Tanner pubic-hair stage", prefix="PH"),
+    "TV": dict(label="Testis-volume class (Prader orchidometer, larger testis)", prefix="TV class ",
+               classes_ml=[[None, 4.0], [4.0, 12.0], [12.0, 20.0], [20.0, None]],
+               class_labels=["1-3.9 mL", "4-11.9 mL", "12-20 mL", ">20 mL"]),
+}
+
+
+def stage_system_of(r):
+    if pd.isna(r.get("tanner_stage")):
+        return None
+    ts = str(r.get("tanner_system", "") or "").strip()
+    if re.search(r"testis-volume class", ts, re.I):
+        return "TV"
+    if re.match(r"(?:genital|G\b)", ts, re.I):
+        return "G"
+    if re.match(r"pubic hair", ts, re.I):
+        return "PH"
+    return "unknown"
+
+
+def pool_stage(s):
+    """Pool one stage within one staging system (flagged rows already removed)."""
+    base = dict(k=int(len(s)), k_studies=int(s.study_id.nunique()), studies=sorted(s.study_id.unique().tolist()),
+                age_range=[float(np.nanmin(s.age)), float(np.nanmax(s.age))] if s.age.notna().any() else None)
+    if not s["n"].notna().all():
+        # Provisional: equal weights. With the between-study differences seen here (log-scale tau^2 >> v_i),
+        # random-effects weights would be close to equal anyway; the study range replaces a prediction interval.
+        return base | dict(n=None if s["n"].isna().all() else int(s["n"].sum()), provisional=True,
+                           mean=float(np.exp(np.log(s["mean"]).mean())), sd=float(np.exp(np.log(s["sd"]).mean())),
+                           ci_lo=None, ci_hi=None, tau_log=None,
+                           pop_mean_pi_lo=float(s["mean"].min()) if len(s) > 1 else None,
+                           pop_mean_pi_hi=float(s["mean"].max()) if len(s) > 1 else None)
+    if len(s) == 1:
+        x = s.iloc[0]
+        return base | dict(n=int(x["n"]), provisional=False, mean=float(x["mean"]), sd=float(x["sd"]), ci_lo=None, ci_hi=None,
+                           pop_mean_pi_lo=None, pop_mean_pi_hi=None, tau_log=None)
+    y, v = np.log(s["mean"]), (s["sd"] / s["mean"]) ** 2 / s["n"]
+    ys, vs = np.log(s["sd"]) + 1 / (2 * (s["n"] - 1)), 1 / (2 * (s["n"] - 1))
+    r1 = meta.random_effects(y, v, "REML", hksj=True)
+    r2 = meta.random_effects(ys, vs, "REML", hksj=True)
+    pil = math.exp(r1.pi[0]) if not math.isnan(r1.pi[0]) else None
+    pih = math.exp(r1.pi[1]) if not math.isnan(r1.pi[1]) else None
+    return base | dict(n=int(s.n.sum()), provisional=False, mean=math.exp(r1.mu), sd=math.exp(r2.mu),
+                       ci_lo=math.exp(r1.ci[0]), ci_hi=math.exp(r1.ci[1]), pop_mean_pi_lo=pil, pop_mean_pi_hi=pih, tau_log=r1.tau)
+
+
+# ---------------------------------------------------------------------------
+# Optional population layer
+# ---------------------------------------------------------------------------
+# Region = WHO region of the country where each study was done. It is a proxy for the source population,
+# not the child's ancestry. Beyond the newborn period most regions have 1-2 studies at any age, so the layer
+# pools same-region rows covering the child's age (same eligible rows and REML engine as the age model) and
+# reports k; it never extrapolates a region's offset to ages where that region has no data.
+POPULATIONS = {"AFR": "Sub-Saharan Africa", "AMR": "The Americas", "EMR": "Middle East & North Africa",
+               "EUR": "Europe (including Turkey)", "SEAR": "South & South-East Asia", "WPR": "East Asia & Western Pacific"}
+
+
+def population_model(A, grid):
+    lo_all = A["age_lo_years"].fillna(A["age"] - 0.5).to_numpy()
+    hi_all = A["age_hi_years"].fillna(A["age"] + 0.5).to_numpy()
+    out = {}
+    for reg, label in POPULATIONS.items():
+        m = (A["who_region"] == reg).to_numpy()
+        R, rlo, rhi = A[m].reset_index(drop=True), lo_all[m], hi_all[m]
+        if not len(R):
+            continue
+        cache, cols = {}, {k: [] for k in ("mean", "sd", "pi_lo", "pi_hi", "k_studies", "n", "set")}
+        sets = []
+        for a in grid:
+            idx = tuple(np.where((rlo - 1e-6 <= a) & (a <= rhi + 1e-6))[0])
+            if not idx:
+                for k in cols:
+                    cols[k].append(None)
+                continue
+            if idx not in cache:
+                S = R.iloc[list(idx)]
+                studies = sorted(S.study_id.unique().tolist())
+                if studies not in sets:
+                    sets.append(studies)
+                # 1) combine a study's rows covering this age (fixed effect: adjacent bins at a boundary, or
+                #    several cohorts of one study), so each study counts once; 2) random effects across studies.
+                per = []
+                for sid, g in S.groupby("study_id"):
+                    w = 1 / ((g["sd"] / g["mean"]) ** 2 / g["n"])
+                    ws = 2 * (g["n"] - 1)
+                    per.append((float(np.sum(w * np.log(g["mean"])) / np.sum(w)), float(1 / np.sum(w)),
+                                float(np.sum(ws * (np.log(g["sd"]) + 1 / ws)) / np.sum(ws)), float(1 / np.sum(ws)),
+                                float(np.exp(np.log(g["mean"]).mean()))))
+                P_ = np.array(per)
+                if len(P_) == 1:
+                    res = (math.exp(P_[0, 0]), math.exp(P_[0, 2]), None, None)
+                else:
+                    r1 = meta.random_effects(P_[:, 0], P_[:, 1], "REML", hksj=True)
+                    r2 = meta.random_effects(P_[:, 2], P_[:, 3], "REML", hksj=True)
+                    if len(P_) >= 3:   # normal-approximation interval for a new population's mean, as in the age curve
+                        half = 1.96 * math.sqrt(r1.tau2 + r1.se ** 2)
+                        pil, pih = math.exp(r1.mu - half), math.exp(r1.mu + half)
+                    else:              # two studies: show their range, not a model interval
+                        pil, pih = float(P_[:, 4].min()), float(P_[:, 4].max())
+                    res = (math.exp(r1.mu), math.exp(r2.mu), pil, pih)
+                cache[idx] = res + (len(studies), int(S["n"].sum()), sets.index(studies))
+            mean, sd, pil, pih, ks, n, si = cache[idx]
+            for k, val in zip(("mean", "sd", "pi_lo", "pi_hi", "k_studies", "n", "set"),
+                              (round(mean, 4), round(sd, 4), pil and round(pil, 4), pih and round(pih, 4), ks, n, si)):
+                cols[k].append(val)
+        countries = sorted({str(c).split(" (")[0] for c in R.country.dropna()})
+        out[reg] = dict(label=label, countries=countries, k_studies_total=int(R.study_id.nunique()), sets=sets, **cols)
+    return out
+
+
+def curation_summary(rows):
+    """Counts the app quotes in its methods text, computed from the data (never hard-coded)."""
+    A = rows[rows.usable & rows.kind.isin(["newborn", "age", "digitized"]) & (rows.age >= 0) & (rows.age <= 19)]
+    shown = A[A.measurement_concern]
+    return dict(n_rows_lookup=int(rows["mean"].notna().sum()), studies_flagged=sorted(shown.study_id.unique().tolist()),
+                n_flagged_rows=int(len(shown)))
+
+
+# ---------------------------------------------------------------------------
+# 4. Build
 # ---------------------------------------------------------------------------
 
 def main():
+    import check_decisions  # the decision register and the calculator's rules must agree before anything is built
+    problems = check_decisions.check()
+    if problems:
+        sys.exit("decision_log.csv and tool_curation.csv disagree:\n  " + "\n  ".join(problems))
     rows = load_rows()
     rows["usable"] = rows["mean"].notna() & rows["sd"].notna() & rows["n"].notna() & (rows["n"] >= 5) & rows["age"].notna()
     keep_cols = ["kind", "study_id", "first_author", "year", "country", "who_region", "population", "pmid", "doi",
@@ -312,42 +446,23 @@ def main():
     age_model = dict(k_rows=int(len(A)), k_studies=int(A.study_id.nunique()), n_total=int(A.n.sum()),
                      tau_log=tau, tau2_sd_model=ms["tau2"], knots_t=knots.tolist(),
                      transform="t = ln(age_years + 0.25)", curve=curve)
+    pop_model = population_model(A, grid)
 
-    # ---- Tanner model
-    T = rows[rows["mean"].notna() & rows["sd"].notna() & rows.tanner_stage.notna()].copy()
-    if "tanner_system" in T:
-        ts = T.tanner_system.fillna("").astype(str)
-        g = T[ts.str.contains(r"^\s*(?:genital|G\b)", case=False, regex=True) | ts.eq("") | ts.eq("nan")]
-        T = g if len(g) else T
-    tanner = {}
-    for st in range(1, 6):
-        s = T[T.tanner_stage == st]
-        if len(s) == 0:
-            continue
-        n_known = s["n"].notna().all()
-        if not n_known:  # provisional: equal weights, between-study range shown instead of a PI
-            tanner[f"G{st}"] = dict(k=int(len(s)), k_studies=int(s.study_id.nunique()), n=None, provisional=True,
-                                    mean=float(np.exp(np.log(s["mean"]).mean())), sd=float(np.exp(np.log(s["sd"]).mean())),
-                                    ci_lo=None, ci_hi=None, pop_mean_pi_lo=float(s["mean"].min()) if len(s) > 1 else None,
-                                    pop_mean_pi_hi=float(s["mean"].max()) if len(s) > 1 else None, tau_log=None,
-                                    age_range=[float(np.nanmin(s.age)), float(np.nanmax(s.age))] if s.age.notna().any() else None,
-                                    studies=sorted(s.study_id.unique().tolist()))
-            continue
-        y, v = np.log(s["mean"]), (s["sd"] / s["mean"]) ** 2 / s["n"]
-        ys, vs = np.log(s["sd"]) + 1 / (2 * (s["n"] - 1)), 1 / (2 * (s["n"] - 1))
-        if len(s) >= 2:
-            r1 = meta.random_effects(y, v, "REML", hksj=True)
-            r2 = meta.random_effects(ys, vs, "REML", hksj=True)
-            mu, lo, hi, tau_t = math.exp(r1.mu), math.exp(r1.ci[0]), math.exp(r1.ci[1]), r1.tau
-            pil = math.exp(r1.pi[0]) if not math.isnan(r1.pi[0]) else None
-            pih = math.exp(r1.pi[1]) if not math.isnan(r1.pi[1]) else None
-            sd = math.exp(r2.mu)
-        else:
-            x = s.iloc[0]
-            mu, sd, lo, hi, tau_t, pil, pih = x["mean"], x["sd"], None, None, None, None, None
-        tanner[f"G{st}"] = dict(k=int(len(s)), k_studies=int(s.study_id.nunique()), n=int(s.n.sum()), mean=mu,
-                                ci_lo=lo, ci_hi=hi, pop_mean_pi_lo=pil, pop_mean_pi_hi=pih, sd=sd, tau_log=tau_t,
-                                age_range=[float(np.nanmin(s.age)), float(np.nanmax(s.age))])
+    # ---- Pubertal-stage models, one per staging system (never pooled across systems)
+    rows["stage_system"] = rows.apply(stage_system_of, axis=1)
+    stage_model = {}
+    for sysk, spec in STAGE_SYSTEMS.items():
+        S = rows[(rows.stage_system == sysk) & rows["mean"].notna() & rows["sd"].notna() & rows.tanner_stage.notna()]
+        stages = {}
+        for st in sorted(S.tanner_stage.dropna().unique().astype(int)):
+            s_all = S[S.tanner_stage == st]
+            s = s_all[~s_all.measurement_concern]           # same rule as the age model: flagged rows are shown, not pooled
+            shown_only = sorted(s_all.loc[s_all.measurement_concern, "study_id"].unique().tolist())
+            if len(s) == 0:
+                stages[str(st)] = dict(k=0, k_studies=0, n=None, mean=None, sd=None, studies=[], shown_only=shown_only)
+                continue
+            stages[str(st)] = pool_stage(s) | dict(shown_only=shown_only)
+        stage_model[sysk] = dict(spec, stages=stages)
 
     # ---- per-study rows for the lookup table
     P = rows[rows["mean"].notna()].copy()
@@ -361,6 +476,7 @@ def main():
             age_label=str(r.get("age_bin_label", "")), age_lo=round(float(r["age_lo"]), 4), age_hi=round(float(r["age_hi"]), 4),
             age_mid=None if pd.isna(r.get("age")) else round(float(r["age"]), 4),
             tanner=None if pd.isna(r.get("tanner_stage")) else int(r["tanner_stage"]),
+            stage_system=None if pd.isna(r.get("tanner_stage")) else r.get("stage_system"),
             n=None if pd.isna(r.get("n")) else int(r["n"]), mean=round(float(r["mean"]), 3),
             sd=None if pd.isna(r["sd"]) else round(float(r["sd"]), 3), derivation=r["derivation"],
             technique=str(r.get("technique", ""))[:160], fatpad=str(r.get("fatpad_depressed", "")),
@@ -368,7 +484,9 @@ def main():
             pmid=str(r.get("pmid", "")), doi=str(r.get("doi", "")),
             lms=None if pd.isna(r.get("lms_L")) or pd.isna(r.get("lms_S")) else [round(float(r["lms_L"]), 4), round(float(r["lms_M"]), 4), round(float(r["lms_S"]), 5)],
             note=str(r.get("curation_note", "") or "")))
-    model = dict(version=pd.Timestamp.today().strftime("%Y-%m-%d"), age_model=age_model, tanner_model=tanner, rows=studies)
+    model = dict(version=pd.Timestamp.today().strftime("%Y-%m-%d"), age_model=age_model, stage_model=stage_model,
+                 population_model=pop_model, rows=studies,
+                 curation=curation_summary(rows))
     def clean(o):
         if isinstance(o, dict):
             return {k: clean(v) for k, v in o.items()}
@@ -399,7 +517,9 @@ def main():
     ax.spines[["top", "right"]].set_visible(False); ax.legend(frameon=False, fontsize=8)
     fig.tight_layout(); fig.savefig(os.path.join(FIG, "pooled_curve.png"), dpi=200); plt.close(fig)
     print(json.dumps(dict(age_rows=len(A), age_studies=age_model["k_studies"], n=age_model["n_total"], tau_log=round(tau, 3),
-                          knots=len(knots), tanner={k: (v["k"], round(v["mean"], 2), round(v["sd"], 2)) for k, v in tanner.items()},
+                          knots=len(knots), stages={f"{sk}{st}": (v["k"], v["mean"] and round(v["mean"], 2), v["sd"] and round(v["sd"], 2),
+                                                   "prov" if v.get("provisional") else "")
+                                                for sk, sm in stage_model.items() for st, v in sm["stages"].items()},
                           lookup_rows=len(studies)), indent=1))
 
 

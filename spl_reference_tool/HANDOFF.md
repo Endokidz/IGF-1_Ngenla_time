@@ -1,12 +1,24 @@
 # Handoff: SPL reference tool
 
-## START HERE (fresh session, last updated 2026-11-18 at the end of session 3)
+## START HERE (fresh session, last updated 2026-11-22, session 4b)
+
+**P6, the meta-analysis and calculator paper, now has its own agent: `.claude/agents/spl-meta-analysis.md`.** Its project folder is `spl_manuscripts/P6_SPL_reference_meta_calculator/`. Hand it anything about P6, screening, or which studies are pooled.
+
+**Human dual review pack** (blinded workbook, hidden key, reconciliation with κ): `spl_manuscripts/P6_SPL_reference_meta_calculator/review/`. Proposed main-analysis rule M1 is in its README.
+
+**Manuscript gaps (P1–P6)** are listed in `spl_manuscripts/REVIEW_2026-11-22.md`, which came from five independent reviews that checked every number against the data.
+
+**Decision register.** Every exclude, flag or scale decision lives in `data/decision_log.csv`, reconstructed retroactively from git history on 2026-11-22 (53 entries). `data/tool_curation.csv` must match it: `code/check_decisions.py` runs inside `build_model.py`, and the build fails on any mismatch. Screening decisions are in `data/screening_log.csv` (age search, 710 records; the Tanner and newborn searches are not yet transcribed).
 
 **Decisions confirmed by the author (do not reopen):**
 
 1. **Tomova 2010 is not pooled.** The fat pad was not depressed. It stays visible in the per-study table.
 2. **Gabrich 2007 Tanner staging is unknown.** Its Tanner rows stay out of the genital-stage model.
 3. The same rule as Sotos 2017 applies to any study that documents a non-depressed fat pad.
+4. **Session 4 defaults approved (2026-11-22).** G, PH and TV are separate scales, and G is labelled single-study. Flagged rows are not pooled by stage.
+5. **Wang 2018, Bhat 2015 and Puri 2017 are visible but not pooled (2026-11-22, revised the same day after a brief full exclusion).** They are shown with ⚠ and never enter the pooled curve. The reasons, and the D026→D054 history, are in the register.
+6. **Headline shows both scores (2026-11-22).** The age card always appears. When puberty data are entered, a second card shows the best-supported puberty reference: n reported and not provisional, then more studies, then larger n.
+7. **Population layer, optional (2026-11-22).** Region (WHO) is where a study was done, not ancestry. Rows covering the child's age are pooled within each study, then by random effects across studies. With 2 studies the range is shown; with 3 or more, an interval for a new population's mean. The layer is never extrapolated to ages without regional data.
 
 **Still missing:**
 
@@ -14,16 +26,16 @@
 |---|---|
 | Tier 1 | Schonfeld 1942 pp. 760-777 (only p. 759 was received) |
 | Tier 2 | Boas 2006 (16382001); Saleh 2018 (30411390); Tomova 2015 (25781529), to be checked for overlap with Tomova 2010; Romano-Riquer 2007 (17439530); Feldman 1975 (1113226) |
-| Addendum | 24145175; 21682766; 38761403; 28082769. Titles are unknown: no addendum section exists in DOWNLOAD_LIST.md. |
-| Figures | Wang 2018 Fig 1; Bhat 2015 Fig 3; Puri 2017 Fig 4a; Jaiswal 2019 Fig 1 |
+| Addendum | Resolved 2026-11-22: Teckchandani 2014 (24145175), Cinaz 2012 (21682766), Fischer 2024 COPANA (38761403), Puri 2017 (28082769, done from open access). See the ranked ask in DOWNLOAD_LIST.md. |
+| Figures | None needed: the Wang 2018, Bhat 2015 and Puri 2017 tables were recovered from open access (Batch 4); Jaiswal Fig 1 is obsolete. |
 | Manuscripts | Avril 2023 (36724045) for P2; Chen 2015 (25894960) for P2; Mancini 2021 (34283215) for P3 |
 
 **Already received; do not re-extract.** Soydan 2012, Tomova 2010, Gabrich 2007, Ishii 2014, De Win 2026, Fok 2005, and Schonfeld p. 759. Uploads are matched by md5: repeat uploads of Ishii and Fok were byte-identical.
 
 **Open tasks, in order:**
 
-1. Process new PDFs as they arrive, following "Rules for each PDF" below.
-2. **Tanner model: still provisional, now an author decision.** Soydan 2012 did NOT unblock it (see Batch 3).
+1. Process new PDFs as they arrive, following "Rules for each PDF" below. The ranked ask is at the top of `DOWNLOAD_LIST.md`.
+2. **Tanner model: superseded by Batch 4.** The text below is kept for the record. Soydan 2012 did NOT unblock it (see Batch 3).
    - No study with known n reports SPL by Marshall-Tanner *genital* stage. The only such data come from Sotos and Jaiswal, and neither gives n.
    - The large n-known staged data are all **pubic-hair** staged: Soydan PH1-5 (n = 1,539), De Win (flagged) and possibly Gabrich.
    - Options to put to the author:
@@ -39,10 +51,11 @@
 **After each batch:**
 
 1. Rebuild the model and the app.
-2. Check `figures/pooled_curve.png` and `k_local`.
-3. Read the artifact, then republish it with `url`.
-4. Update this file.
-5. Commit and push. Never commit PDFs or figure images.
+2. Run `node tests/app.test.js`. Every check must pass (41 checks). `build_model.py` has already checked the decision register.
+3. Check `figures/pooled_curve.png` and `k_local`.
+4. Read the artifact, then republish it with `url`.
+5. Update this file.
+6. Commit and push. Never commit PDFs or figure images.
 
 This file lets a fresh session pick up the work from where it stopped.
 
@@ -151,3 +164,70 @@ Supplied PDFs also feed these manuscripts:
 | P2 | Chen 2015 (25894960) | SPL change in the control group |
 | P3 | Mancini 2021 (34283215) | Values by BMI group |
 | P1 | Tier 2 newborn studies | Extra rows; re-run `code/analysis.py` and `code/within_country.py` |
+
+## Batch 4 (2026-11-22): pubertal references rebuilt; open-access tables recovered; app hardened
+
+**Bugs found and fixed**
+
+| Bug | Clinical consequence | Fix |
+|---|---|---|
+| The stage model ignored `measurement_concern`, so it pooled Sotos 2017 (fat pad not depressed, gentle stretch), against the author's confirmed rule. | G5 reference 9.65 ± 1.22 cm. A G5 boy with SPL 8 cm read as "within ±2 SD". | Flagged rows are excluded from the stage pools and listed as "shown, not pooled". |
+| The study table labelled every staged row "G<n>". | Soydan's testis-volume classes, Soydan, Jaiswal and De Win pubic-hair rows, and Gabrich's unknown-system rows all appeared as genital-stage rows: the conflation the author rejected as option (c). | `stage_system` is stored per row; rows match and are labelled only within their own scale. |
+| In `tanner_extraction_from_age_studies.csv` (Jaiswal), `tanner_stage` was text, so it parsed as NaN. | These 8 stage rows showed as **age** references, in the table and as chart dots, for every boy aged 11–17 y. They also duplicate the `tanner_extraction.csv` rows. | Excluded via `tool_curation.csv`. |
+| The methods text and README hard-coded counts. | The app told clinicians that Tomova, Gabrich and Soydan were still missing and that 1 study covered ages above 16 y. | Methods text is generated from `model.json` (counts, density by age band, flagged studies, stage sources). The README no longer quotes counts. |
+
+**New structure** (`build_model.py`: `STAGE_SYSTEMS`, `stage_system_of`, `pool_stage`; `model.json`: `stage_model.{G,PH,TV}`, which replaces `tanner_model`)
+
+| Scale | Studies pooled | Status |
+|---|---|---|
+| **G** | Jaiswal 2019 only | Single study, no n; G1 has no eligible data. Sotos 2017 is shown, not pooled. |
+| **PH** | PH1: Soydan only. PH2–5: Soydan + Jaiswal | Equal-weight provisional, because Jaiswal gives no n. De Win 2026 is shown, not pooled. |
+| **TV** | Soydan 2012's own testis-volume classes | 1–3.9, 4–11.9, 12–20 and >20 mL; n = 5, 194, 965 and 375. The app maps the orchidometer volume to the class; class 3 includes 20 mL. |
+
+Gabrich 2007 (staging system not stated) is shown against G or PH, labelled "system not stated", and never pooled.
+
+**Open-access tables recovered.** These were "Figures" items on the download list.
+
+- **Route.** The NCBI PMC Article Dataset on AWS (`https://pmc-oa-opendata.s3.amazonaws.com/PMC<id>.1/`) has the PDFs and full-resolution images. pmc.ncbi.nlm.nih.gov article pages now serve a reCAPTCHA; do not try to get around it.
+- **Verification.** Each cell was transcribed from the PDF text layer and cross-checked against the table image.
+
+| Study | Rows | Notes | Status |
+|---|---|---|---|
+| **Wang 2018** (PMC6219296) | Table 1 mean ± SD and Table 2 smoothed P3–P97, 18 one-year groups, n = 2,974 | n sums exactly. These rows replace the single text-only row. | **Flagged:** gentle stretch with the fat pad only mildly compressed, and 1.9% Tukey outliers removed, giving a CV of about 5%. Same rule as Roy 2019. |
+| **Bhat 2015** (PMC4397544) | Table 1, 10 one-year groups, n = 25 each | SD = (+2 SD − −2 SD)/4, using the new `minus2sd_cm`/`plus2sd_cm` columns. These rows replace the 3 text-only rows. | **Flagged:** pubopenile vertex; Fig 1 shows the caliper jaw at the skin junction. Same rule as Tomova 2010. |
+| **Puri 2017** (PMC5217151) | Table 1, 6 groups, mm converted to cm | — | **Flagged:** 42% acutely ill inpatients; the 1–3 y row is impossible (SD 6.7 mm with a range of 40–46 mm); the 12–16 y group pools across puberty. |
+
+The pooled age model is unchanged (91 rows, 25 studies, n = 20,220, τ_log = 0.136), as expected, because all three studies are flagged.
+
+**Addendum PMIDs resolved:**
+
+- 24145175 = Teckchandani 2014.
+- 21682766 = Cinaz 2012. This is the original of an excluded second-hand quote.
+- 38761403 = Fischer 2024 (COPANA minipuberty SPL).
+- 28082769 = Puri 2017.
+
+`DOWNLOAD_LIST.md` now opens with a ranked "current ask"; no figures are needed.
+
+**App changes**
+
+- Inputs: genital stage, pubic-hair stage, testis volume (mL), and born preterm.
+- A preterm newborn gets a critical alert that the reference is term-only. A preterm infant under 2 y is prompted to consider corrected age.
+- A "references disagree" alert appears when the age and stage z-scores fall in different SDS bands and one of them is below −2.
+- All alerts now sit directly under the headline.
+- The second-examiner alert uses the lowest z across the references.
+- The SDS scale is drawn at the container's width, so it is legible on a phone; marker labels are stacked so they never overprint.
+- Flagged studies appear as hollow dots on the chart.
+
+**Tests.** `tests/app.test.js` (Playwright, headless) has 32 checks:
+
+- the age z-score at 7 ages against an independent calculation from `model.json`;
+- age-input handling;
+- separation of the staging scales;
+- the TV class boundaries;
+- Sotos not pooled;
+- no Jaiswal leak;
+- flagged rows marked;
+- the preterm, puberty, disagreement and second-examiner alerts;
+- the generated methods text;
+- no horizontal scroll at 375 px;
+- no script errors.

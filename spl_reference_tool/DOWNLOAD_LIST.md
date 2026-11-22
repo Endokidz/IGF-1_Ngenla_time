@@ -1,5 +1,32 @@
 # Papers and figures to download
 
+## Current ask, ranked by impact (updated 2026-11-22, session 4b)
+
+Everything below this section is the original request list, kept for the record. This short list supersedes it.
+
+**No figures are needed any more.** The Wang 2018, Bhat 2015 and Puri 2017 tables were recovered as images from the official PMC open-access dataset and transcribed, with every cell checked against the PDF text layer. Jaiswal 2019 Fig 1 was secondary data for Gabrich and Tomova, whose originals are now in.
+
+| Rank | Paper | Why it now matters most |
+|---|---|---|
+| 1 | **Largo RH, Prader A. 1983.** Pubertal development in Swiss boys. *Helv Paediatr Acta* 38:211-28 (PMID 6618890) | The genital-stage (G) reference now rests on a single study (Jaiswal 2019) that gives no n, because Sotos 2017 is correctly excluded under the fat-pad rule. This is the classic longitudinal G-staged cohort. Check first whether it tabulates penile length by G stage. |
+| 2 | **Saleh R et al. 2018.** *Andrologia* 51:e13192 (PMID 30411390) | 1,078 Egyptian boys aged 9-18 y, with penile length by age and by gonadal stage. Adds an n-known study where the adolescent curve is weakest. |
+| 3 | **Fischer MB et al. 2024.** Longitudinal fetal and infant AGD... *J Clin Endocrinol Metab* 109:3087-95 (PMID 38761403; addendum item, title now resolved) | COPANA cohort: SPL in 287 healthy boys at about 3.5 months. The pooled curve rests on only 2 studies at 3 months, during minipuberty. |
+| 4 | **Cinaz P et al. 2012.** Penile anthropometry of normal prepubertal boys in Turkey. *Acta Paediatr* 101:e33-6 (PMID 21682766; addendum item, title now resolved) | 1,278 healthy prepubertal boys. It is currently excluded because we hold only a second-hand quote, so the original turns an exclusion into data. |
+| 5 | **Boas M et al. 2006.** *Eur J Endocrinol* 154:125-9 (PMID 16382001) | 1,962 boys at 0, 3, 18 and 36 months. Also needed to update P1. |
+| 6 | **Feldman KW, Smith DW. 1975.** *J Pediatr* 86:395-8 (PMID 1113226) | Gestational-age-specific newborn standard. The app now warns that the newborn reference is term-only; this paper would let it give a preterm answer instead of only a warning. |
+| 7 | **Schonfeld WA, Beebe GW. 1942.** *J Urol* 48:759-77, pp. 760-777 | Historic 0-25 y reference (only p. 759 has been received). |
+| 8 | Romano-Riquer 2007 (17439530) | Newborn; needed for P1. It is free on PMC (PMC3653615), but the site blocks automated download; one click for you. |
+| 9 | Bhakhri 2014 (24621243) | India, n = 1,249 newborns. It would more than double the South Asian n in P1. |
+| Low | Tomova 2015 (25781529); Teckchandani 2014 (24145175; addendum item, title now resolved: Indian boys 0-10 y, surgical ward and outpatients, n = 200) | Tomova 2015 is the same group as Tomova 2010 and very probably measured without fat-pad depression, so it would be shown, not pooled. Teckchandani's sample is surgical. |
+
+Addendum item 28082769 is Puri 2017, now processed from open access. It was excluded on 2026-11-22.
+
+For the manuscripts: Avril 2023 (36724045) is open access and the agent can fetch it itself. Its open-access package holds only *Supplementary Table 1*; earlier notes asked for a "Table 2". Chen 2015 (25894960) and Mancini 2021 (34283215) still need you. Mancini measured length without stretching, so it is not SPL.
+
+---
+
+## Original request list (2026-11-18)
+
 These papers are paywalled or not machine-readable from this environment, but are important for the SPL reference tool and the manuscripts.
 
 **How to send them:** attach the PDF, or the figure image, to a chat message. Filenames don't matter; I'll match them to these entries. I will extract each table into the reference database with its source cell recorded, and digitise each figure with a visual overlay you can check against the original.

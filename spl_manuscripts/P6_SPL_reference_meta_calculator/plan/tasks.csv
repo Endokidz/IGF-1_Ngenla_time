@@ -1,0 +1,133 @@
+id,phase,owner,minutes,title,what_to_do,done_when,depends_on,status
+PI-01,0 Team,PI,15,Read the 1-page guide; confirm roles,"Read GUIDE_first_meta_analysis.md. Confirm: resident = Reviewer A, AI = Reviewer B, you = adjudicator.",Roles confirmed in chat,,todo
+PI-02,0 Team,PI,10,Decide M1 (doubtful-measurement rule),Agent shows a 5-line brief; answer approve/edit.,M1 answered,PI-01,todo
+PI-03,0 Team,PI,10,"Decide M2, M5, M6",Apply M1 to P1? Screen the 753 T19 records? Abstract-only data in primary?,Answered,PI-02,todo
+PI-04,0 Team,PI,10,"Decide M7, M8",Testis volume as primary pubertal covariate? Region reported only with >= 3 studies?,Answered,PI-03,todo
+PI-05,0 Team,PI,15,Approve screening criteria (M10),Read the criteria block in review/AI_SCREENING_PROTOCOL.md; approve or edit.,Criteria frozen,PI-04,todo
+PI-06,0 Team,PI,10,Invite the resident,"Send the agent-drafted invitation (role, ~48 h over ~3 months, co-authorship).",Resident agreed,PI-01,todo
+PI-07,0 Team,PI,10,Invite a methodologist/statistician co-author,Send the agent-drafted email (2-3 h of review at protocol and results stage).,Sent,PI-01,todo
+PI-08,0 Team,PI,15,Verify the journals' JCR rank,"In JCR via the TAU library, check the quartile of J Pediatr, Eur J Endocrinol and Hum Reprod in their best category (year of publication rule). Note them for the agent.",Ranks recorded,PI-01,todo
+PI-08b,0 Team,PI,10,Confirm 'original article' status with the TAU library,Send the agent-drafted 3-line email to the medical library's publication-list contact: will a meta-analysis + calculator in J Pediatr (Original Article) be listed as an original article?,Answer recorded; journal fixed,PI-08,todo
+PI-09,0 Team,PI,10,Authorship and CRediT,Approve the agent-drafted author order and CRediT roles.,Approved,PI-06;PI-07,todo
+AI-01,1 Protocol,AI,0,Draft PRISMA-P protocol,"Agent drafts the protocol from README, M1-M10 and the criteria.",Draft in plan/,PI-05,todo
+PI-10,1 Protocol,PI,15,Approve protocol: question and eligibility,Read the protocol section on question and eligibility; approve or mark edits.,Section approved,AI-01,todo
+PI-11,1 Protocol,PI,15,"Approve protocol: search, selection and extraction","Read the protocol section on search, selection and extraction; approve or mark edits.",Section approved,PI-10,todo
+PI-12,1 Protocol,PI,15,"Approve protocol: analysis, sensitivity analyses and appraisal tool","Read the protocol section on analysis, sensitivity analyses and appraisal tool; approve or mark edits.",Section approved,PI-11,todo
+PI-13,1 Protocol,PI,15,Register on OSF,"Log in to OSF (your account), paste the agent-prepared registration, submit; send the DOI to the agent.",OSF DOI recorded,PI-12,todo
+AI-02,2 Search,AI,0,Draft search strategies,"MeSH + text-word strategies for PubMed, Embase, Scopus, Web of Science, LILACS; citation chasing incl. Negri 2026.",Strategies in plan/,PI-12,todo
+PI-14,2 Search,PI,10,Ask the TAU librarian,"Send the agent-drafted email: database access, PRESS peer review of the strategies, Negri 2026 supplement (included-study list).",Sent,AI-02,todo
+PI-15,2 Search,PI,10,Approve final strategies,Read librarian comments as summarised by the agent; approve.,Approved,PI-14,todo
+R-01,1 Protocol,Resident,60,Orientation and practice,"Read GUIDE, protocol, criteria; screen 20 practice records with the agent's feedback.",Practice done,PI-12;PI-06,todo
+R-02,2 Search,Resident,60,Run Embase search and export,Run the approved Embase strategy via TAU access; export RIS; upload to the repo folder the agent names.,Export uploaded,PI-15;R-01,todo
+R-03,2 Search,Resident,60,Run Scopus + Web of Science and export,Same as R-02 for Scopus and WoS (and LILACS if time).,Exports uploaded,R-02,todo
+AI-03,2 Search,AI,0,De-duplicate and build the screening set,Merge with the PubMed re-run; de-duplicate; PRISMA identification counts; Rayyan import file.,Screening set ready,R-03,todo
+R-04,2 Search,Resident,60,Set up Rayyan (blind mode),"Create the Rayyan review, import the file, switch blinding on, invite the PI; set the exclusion reasons list.",Rayyan ready,AI-03,todo
+R-05,3 Screening,Resident,60,Calibration: screen 200 records,Screen the 200-record calibration set in Rayyan (blind).,200 screened,R-04;PI-13,todo
+AI-04,3 Screening,AI,0,AI screens calibration set; computes sensitivity,"Fresh blinded AI run on the same 200; sensitivity, specificity, kappa.",Report ready,R-05,todo
+PI-16,3 Screening,PI,10,Go/no-go on the AI reviewer,Read the calibration report: AI must find >= 95% of the resident's includes.,Decision recorded,AI-04,todo
+R-06,3 Screening,Resident,60,"Screen titles/abstracts, batch 1 of 9",Screen the next ~450 records in Rayyan (blind).,Batch screened,PI-16,todo
+R-07,3 Screening,Resident,60,"Screen titles/abstracts, batch 2 of 9",Screen the next ~450 records in Rayyan (blind).,Batch screened,R-06,todo
+R-08,3 Screening,Resident,60,"Screen titles/abstracts, batch 3 of 9",Screen the next ~450 records in Rayyan (blind).,Batch screened,R-07,todo
+R-09,3 Screening,Resident,60,"Screen titles/abstracts, batch 4 of 9",Screen the next ~450 records in Rayyan (blind).,Batch screened,R-08,todo
+R-10,3 Screening,Resident,60,"Screen titles/abstracts, batch 5 of 9",Screen the next ~450 records in Rayyan (blind).,Batch screened,R-09,todo
+R-11,3 Screening,Resident,60,"Screen titles/abstracts, batch 6 of 9",Screen the next ~450 records in Rayyan (blind).,Batch screened,R-10,todo
+R-12,3 Screening,Resident,60,"Screen titles/abstracts, batch 7 of 9",Screen the next ~450 records in Rayyan (blind).,Batch screened,R-11,todo
+R-13,3 Screening,Resident,60,"Screen titles/abstracts, batch 8 of 9",Screen the next ~450 records in Rayyan (blind).,Batch screened,R-12,todo
+R-14,3 Screening,Resident,60,"Screen titles/abstracts, batch 9 of 9",Screen the next ~450 records in Rayyan (blind).,Batch screened,R-13,todo
+PI-17,3 Screening,PI,15,"Adjudicate screening conflicts, batch 1 of 8",Agent lists ~35 records where resident and AI disagree; decide each (include if in doubt).,Batch adjudicated,R-06,todo
+PI-18,3 Screening,PI,15,"Adjudicate screening conflicts, batch 2 of 8",Agent lists ~35 records where resident and AI disagree; decide each (include if in doubt).,Batch adjudicated,R-07,todo
+PI-19,3 Screening,PI,15,"Adjudicate screening conflicts, batch 3 of 8",Agent lists ~35 records where resident and AI disagree; decide each (include if in doubt).,Batch adjudicated,R-08,todo
+PI-20,3 Screening,PI,15,"Adjudicate screening conflicts, batch 4 of 8",Agent lists ~35 records where resident and AI disagree; decide each (include if in doubt).,Batch adjudicated,R-09,todo
+PI-21,3 Screening,PI,15,"Adjudicate screening conflicts, batch 5 of 8",Agent lists ~35 records where resident and AI disagree; decide each (include if in doubt).,Batch adjudicated,R-10,todo
+PI-22,3 Screening,PI,15,"Adjudicate screening conflicts, batch 6 of 8",Agent lists ~35 records where resident and AI disagree; decide each (include if in doubt).,Batch adjudicated,R-11,todo
+PI-23,3 Screening,PI,15,"Adjudicate screening conflicts, batch 7 of 8",Agent lists ~35 records where resident and AI disagree; decide each (include if in doubt).,Batch adjudicated,R-12,todo
+PI-24,3 Screening,PI,15,"Adjudicate screening conflicts, batch 8 of 8",Agent lists ~35 records where resident and AI disagree; decide each (include if in doubt).,Batch adjudicated,R-13,todo
+PI-25,3 Screening,PI,10,Approve screening counts,Check the PRISMA numbers the agent computed.,Approved,PI-24;R-14,todo
+R-15,4 Full text,Resident,60,"Retrieve full texts, batch 1 of 4",Download ~30 PDFs via TAU library / interlibrary loan; place them in the private folder the agent names (never in the public repo).,Batch retrieved,PI-25,todo
+R-16,4 Full text,Resident,60,"Retrieve full texts, batch 2 of 4",Download ~30 PDFs via TAU library / interlibrary loan; place them in the private folder the agent names (never in the public repo).,Batch retrieved,R-15,todo
+R-17,4 Full text,Resident,60,"Retrieve full texts, batch 3 of 4",Download ~30 PDFs via TAU library / interlibrary loan; place them in the private folder the agent names (never in the public repo).,Batch retrieved,R-16,todo
+R-18,4 Full text,Resident,60,"Retrieve full texts, batch 4 of 4",Download ~30 PDFs via TAU library / interlibrary loan; place them in the private folder the agent names (never in the public repo).,Batch retrieved,R-17,todo
+R-19,4 Full text,Resident,60,"Full-text eligibility, batch 1 of 10",Assess ~12 full texts against the criteria in the workbook (blind to the AI).,Batch assessed,R-18,todo
+R-20,4 Full text,Resident,60,"Full-text eligibility, batch 2 of 10",Assess ~12 full texts against the criteria in the workbook (blind to the AI).,Batch assessed,R-19,todo
+R-21,4 Full text,Resident,60,"Full-text eligibility, batch 3 of 10",Assess ~12 full texts against the criteria in the workbook (blind to the AI).,Batch assessed,R-20,todo
+R-22,4 Full text,Resident,60,"Full-text eligibility, batch 4 of 10",Assess ~12 full texts against the criteria in the workbook (blind to the AI).,Batch assessed,R-21,todo
+R-23,4 Full text,Resident,60,"Full-text eligibility, batch 5 of 10",Assess ~12 full texts against the criteria in the workbook (blind to the AI).,Batch assessed,R-22,todo
+R-24,4 Full text,Resident,60,"Full-text eligibility, batch 6 of 10",Assess ~12 full texts against the criteria in the workbook (blind to the AI).,Batch assessed,R-23,todo
+R-25,4 Full text,Resident,60,"Full-text eligibility, batch 7 of 10",Assess ~12 full texts against the criteria in the workbook (blind to the AI).,Batch assessed,R-24,todo
+R-26,4 Full text,Resident,60,"Full-text eligibility, batch 8 of 10",Assess ~12 full texts against the criteria in the workbook (blind to the AI).,Batch assessed,R-25,todo
+R-27,4 Full text,Resident,60,"Full-text eligibility, batch 9 of 10",Assess ~12 full texts against the criteria in the workbook (blind to the AI).,Batch assessed,R-26,todo
+R-28,4 Full text,Resident,60,"Full-text eligibility, batch 10 of 10",Assess ~12 full texts against the criteria in the workbook (blind to the AI).,Batch assessed,R-27,todo
+PI-26,4 Full text,PI,15,"Adjudicate full-text conflicts, batch 1 of 6",Agent shows 3 disputed studies with the key sentences; decide each.,Batch adjudicated,R-20,todo
+PI-27,4 Full text,PI,15,"Adjudicate full-text conflicts, batch 2 of 6",Agent shows 3 disputed studies with the key sentences; decide each.,Batch adjudicated,R-22,todo
+PI-28,4 Full text,PI,15,"Adjudicate full-text conflicts, batch 3 of 6",Agent shows 3 disputed studies with the key sentences; decide each.,Batch adjudicated,R-23,todo
+PI-29,4 Full text,PI,15,"Adjudicate full-text conflicts, batch 4 of 6",Agent shows 3 disputed studies with the key sentences; decide each.,Batch adjudicated,R-25,todo
+PI-30,4 Full text,PI,15,"Adjudicate full-text conflicts, batch 5 of 6",Agent shows 3 disputed studies with the key sentences; decide each.,Batch adjudicated,R-26,todo
+PI-31,4 Full text,PI,15,"Adjudicate full-text conflicts, batch 6 of 6",Agent shows 3 disputed studies with the key sentences; decide each.,Batch adjudicated,R-28,todo
+AI-05,4 Full text,AI,0,Extract data from newly included studies,Verbatim-sourced extraction; update the register and rebuild.,Extraction done,PI-31;R-28,todo
+R-29,4 Full text,Resident,60,"Verify extraction, batch 1 of 10",Check ~40 extracted values against the PDFs (sheet 3).,Batch verified,AI-05,todo
+R-30,4 Full text,Resident,60,"Verify extraction, batch 2 of 10",Check ~40 extracted values against the PDFs (sheet 3).,Batch verified,R-29,todo
+R-31,4 Full text,Resident,60,"Verify extraction, batch 3 of 10",Check ~40 extracted values against the PDFs (sheet 3).,Batch verified,R-30,todo
+R-32,4 Full text,Resident,60,"Verify extraction, batch 4 of 10",Check ~40 extracted values against the PDFs (sheet 3).,Batch verified,R-31,todo
+R-33,4 Full text,Resident,60,"Verify extraction, batch 5 of 10",Check ~40 extracted values against the PDFs (sheet 3).,Batch verified,R-32,todo
+R-34,4 Full text,Resident,60,"Verify extraction, batch 6 of 10",Check ~40 extracted values against the PDFs (sheet 3).,Batch verified,R-33,todo
+R-35,4 Full text,Resident,60,"Verify extraction, batch 7 of 10",Check ~40 extracted values against the PDFs (sheet 3).,Batch verified,R-34,todo
+R-36,4 Full text,Resident,60,"Verify extraction, batch 8 of 10",Check ~40 extracted values against the PDFs (sheet 3).,Batch verified,R-35,todo
+R-37,4 Full text,Resident,60,"Verify extraction, batch 9 of 10",Check ~40 extracted values against the PDFs (sheet 3).,Batch verified,R-36,todo
+R-38,4 Full text,Resident,60,"Verify extraction, batch 10 of 10",Check ~40 extracted values against the PDFs (sheet 3).,Batch verified,R-37,todo
+PI-32,4 Full text,PI,15,Spot-check extraction (1/2),Check 10 random values the agent picks against the PDF.,Done,R-31,todo
+PI-33,4 Full text,PI,15,Spot-check extraction (2/2),Same for another 10 values.,Done,R-35,todo
+AI-06,4 Full text,AI,0,Draft appraisal (risk of bias / applicability) for every study,"Pre-specified domains: sampling, health status, technique, examiner training, reporting.",Drafts ready,R-38,todo
+R-39,4 Full text,Resident,60,"Verify appraisal, batch 1 of 5",Check ~14 study appraisals; change where you disagree.,Batch verified,AI-06,todo
+R-40,4 Full text,Resident,60,"Verify appraisal, batch 2 of 5",Check ~14 study appraisals; change where you disagree.,Batch verified,R-39,todo
+R-41,4 Full text,Resident,60,"Verify appraisal, batch 3 of 5",Check ~14 study appraisals; change where you disagree.,Batch verified,R-40,todo
+R-42,4 Full text,Resident,60,"Verify appraisal, batch 4 of 5",Check ~14 study appraisals; change where you disagree.,Batch verified,R-41,todo
+R-43,4 Full text,Resident,60,"Verify appraisal, batch 5 of 5",Check ~14 study appraisals; change where you disagree.,Batch verified,R-42,todo
+PI-34,4 Full text,PI,15,Adjudicate appraisal disagreements (1/2),Decide disputed domains.,Done,R-41,todo
+PI-35,4 Full text,PI,15,Adjudicate appraisal disagreements (2/2),Decide disputed domains.,Done,R-43,todo
+AI-07,5 Analysis,AI,0,Run final analyses,"Primary model, S1-S3, year x technique (the 'decline' question), stage and population results, figures.",Results pack ready,PI-35;R-38,todo
+PI-36,5 Analysis,PI,15,Review results: main age curve and table,Agent shows one figure/table on main age curve and table with 3 lines of interpretation; accept or question.,Reviewed,AI-07,todo
+PI-37,5 Analysis,PI,15,Review results: sensitivity analyses,Agent shows one figure/table on sensitivity analyses with 3 lines of interpretation; accept or question.,Reviewed,PI-36,todo
+PI-38,5 Analysis,PI,15,Review results: the 'secular decline' test (year vs technique),Agent shows one figure/table on the 'secular decline' test (year vs technique) with 3 lines of interpretation; accept or question.,Reviewed,PI-37,todo
+PI-39,5 Analysis,PI,15,Review results: pubertal and population results,Agent shows one figure/table on pubertal and population results with 3 lines of interpretation; accept or question.,Reviewed,PI-38,todo
+PI-40,5 Analysis,PI,10,Send results to the methodologist; pre-submission inquiry,Send the agent-drafted email to the methodologist and the 150-word inquiry to the target editor.,Sent,PI-39,todo
+PI-41,6 Writing,PI,15,Edit Introduction (1/2),Agent drafts introduction to the target journal's format; you edit one part per bit.,Part approved,PI-12,todo
+PI-42,6 Writing,PI,15,Edit Introduction (2/2),Agent drafts introduction to the target journal's format; you edit one part per bit.,Part approved,PI-41,todo
+PI-43,6 Writing,PI,15,Edit Methods (1/4),Agent drafts methods to the target journal's format; you edit one part per bit.,Part approved,PI-15,todo
+PI-44,6 Writing,PI,15,Edit Methods (2/4),Agent drafts methods to the target journal's format; you edit one part per bit.,Part approved,PI-43,todo
+PI-45,6 Writing,PI,15,Edit Methods (3/4),Agent drafts methods to the target journal's format; you edit one part per bit.,Part approved,PI-44,todo
+PI-46,6 Writing,PI,15,Edit Methods (4/4),Agent drafts methods to the target journal's format; you edit one part per bit.,Part approved,PI-45,todo
+PI-47,6 Writing,PI,15,Edit Results (1/4),Agent drafts results to the target journal's format; you edit one part per bit.,Part approved,PI-39,todo
+PI-48,6 Writing,PI,15,Edit Results (2/4),Agent drafts results to the target journal's format; you edit one part per bit.,Part approved,PI-47,todo
+PI-49,6 Writing,PI,15,Edit Results (3/4),Agent drafts results to the target journal's format; you edit one part per bit.,Part approved,PI-48,todo
+PI-50,6 Writing,PI,15,Edit Results (4/4),Agent drafts results to the target journal's format; you edit one part per bit.,Part approved,PI-49,todo
+PI-51,6 Writing,PI,15,Edit Discussion (1/5),Agent drafts discussion to the target journal's format; you edit one part per bit.,Part approved,PI-50,todo
+PI-52,6 Writing,PI,15,Edit Discussion (2/5),Agent drafts discussion to the target journal's format; you edit one part per bit.,Part approved,PI-51,todo
+PI-53,6 Writing,PI,15,Edit Discussion (3/5),Agent drafts discussion to the target journal's format; you edit one part per bit.,Part approved,PI-52,todo
+PI-54,6 Writing,PI,15,Edit Discussion (4/5),Agent drafts discussion to the target journal's format; you edit one part per bit.,Part approved,PI-53,todo
+PI-55,6 Writing,PI,15,Edit Discussion (5/5),Agent drafts discussion to the target journal's format; you edit one part per bit.,Part approved,PI-54,todo
+PI-56,6 Writing,PI,15,"Edit Abstract, title, key points (1/2)","Agent drafts abstract, title, key points to the target journal's format; you edit one part per bit.",Part approved,PI-55,todo
+PI-57,6 Writing,PI,15,"Edit Abstract, title, key points (2/2)","Agent drafts abstract, title, key points to the target journal's format; you edit one part per bit.",Part approved,PI-56,todo
+PI-58,6 Writing,PI,15,Edit Figures (1/3),Agent drafts figures to the target journal's format; you edit one part per bit.,Part approved,PI-39,todo
+PI-59,6 Writing,PI,15,Edit Figures (2/3),Agent drafts figures to the target journal's format; you edit one part per bit.,Part approved,PI-58,todo
+PI-60,6 Writing,PI,15,Edit Figures (3/3),Agent drafts figures to the target journal's format; you edit one part per bit.,Part approved,PI-59,todo
+PI-61,6 Writing,PI,15,"Edit Supplement (search strings, excluded studies, appraisal table) (1/2)","Agent drafts supplement (search strings, excluded studies, appraisal table) to the target journal's format; you edit one part per bit.",Part approved,PI-35,todo
+PI-62,6 Writing,PI,15,"Edit Supplement (search strings, excluded studies, appraisal table) (2/2)","Agent drafts supplement (search strings, excluded studies, appraisal table) to the target journal's format; you edit one part per bit.",Part approved,PI-61,todo
+PI-63,6 Writing,PI,15,Edit PRISMA 2020 checklist (1/2),Agent drafts prisma 2020 checklist to the target journal's format; you edit one part per bit.,Part approved,PI-50,todo
+PI-64,6 Writing,PI,15,Edit PRISMA 2020 checklist (2/2),Agent drafts prisma 2020 checklist to the target journal's format; you edit one part per bit.,Part approved,PI-63,todo
+PI-65,6 Writing,PI,15,"Edit Declarations (funding, conflicts, AI-use statement, data/code DOI) (1/1)","Agent drafts declarations (funding, conflicts, ai-use statement, data/code doi) to the target journal's format; you edit one part per bit.",Part approved,PI-09,todo
+PI-66,6 Writing,PI,15,Edit Cover letter (1/1),Agent drafts cover letter to the target journal's format; you edit one part per bit.,Part approved,PI-57,todo
+R-44,6 Writing,Resident,60,Reference check (1/3),Check every citation against the claim it supports (agent lists them).,Done,PI-55,todo
+R-45,6 Writing,Resident,60,Reference check (2/3),Continue.,Done,R-44,todo
+R-46,6 Writing,Resident,60,Reference check (3/3) + formatting,Finish; check journal formatting.,Done,R-45,todo
+R-47,6 Writing,Resident,60,Cross-check PRISMA checklist,Confirm each checklist item points to the right page/line.,Done,PI-64,todo
+PI-67,7 Submit,PI,10,Send the full draft to co-authors,Send the agent-drafted email with a 2-week deadline.,Sent,PI-66;R-46;R-47;PI-40,todo
+PI-68,7 Submit,PI,15,Mock peer review (1/4),Agent runs 3 adversarial referee reports + editor summary; you accept/reject fixes for one report per bit.,Fixes decided,PI-67,todo
+PI-69,7 Submit,PI,15,Mock peer review (2/4),Agent runs 3 adversarial referee reports + editor summary; you accept/reject fixes for one report per bit.,Fixes decided,PI-68,todo
+PI-70,7 Submit,PI,15,Mock peer review (3/4),Agent runs 3 adversarial referee reports + editor summary; you accept/reject fixes for one report per bit.,Fixes decided,PI-69,todo
+PI-71,7 Submit,PI,15,Mock peer review (4/4),Agent runs 3 adversarial referee reports + editor summary; you accept/reject fixes for one report per bit.,Fixes decided,PI-70,todo
+PI-72,7 Submit,PI,15,Integrate co-author comments (1/3),Agent merges comments; you decide the contested ones.,Integrated,WAIT-COAUTH,todo
+PI-73,7 Submit,PI,15,Integrate co-author comments (2/3),Agent merges comments; you decide the contested ones.,Integrated,PI-72,todo
+PI-74,7 Submit,PI,15,Integrate co-author comments (3/3),Agent merges comments; you decide the contested ones.,Integrated,PI-73,todo
+R-48,7 Submit,Resident,60,Assemble the submission package,"Files, figure formats, checklist, ORCID ids of all authors.",Package ready,PI-74,todo
+PI-75,7 Submit,PI,15,Suggested and excluded reviewers,Pick 4 suggested reviewers from the agent's list (no conflicts).,Chosen,PI-71,todo
+PI-76,7 Submit,PI,15,Final read and SUBMIT,Read abstract and cover letter once more; submit in the journal portal.,Submitted,PI-75;R-48,todo
