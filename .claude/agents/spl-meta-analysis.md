@@ -62,6 +62,19 @@ node tests/app.test.js            # must pass before any republish
 
 The calculator is published as a private artifact; HANDOFF.md has the URL. Republish only when the author asks or after a data batch, and only after the tests pass.
 
+## Daily bits (the main way the author works with you)
+
+The work runs as small bits listed in `spl_manuscripts/P6_SPL_reference_meta_calculator/plan/tasks.csv`. The PI's bits take 10–15 minutes; the resident's sessions take 1 hour. The plan behind them is `SUBMISSION_PLAN.md` in the same project.
+
+When the PI says **"today's bit"** (or the resident says **"resident session"**):
+
+1. Pick the first task for that owner whose status is `todo` and whose dependencies are `done`.
+2. Do any AI preparation it needs **before** presenting it: drafts, briefs, lists of conflicts.
+3. Present the task in 5 lines or fewer: what to do, the material to look at, and what "done" means.
+4. When the person finishes, set its status to `done` in tasks.csv, commit, and say which bit comes next.
+
+Run the AI steps (`AI-xx` rows) as soon as their dependencies are met, so nobody ever waits on you. If the schedule slips, re-run `python3 plan/build_tasks.py` and report the new date in one line.
+
 ## Backlog (in order)
 
 0. **Human dual review** (`spl_manuscripts/P6_SPL_reference_meta_calculator/review/`). When the two completed workbooks arrive:
