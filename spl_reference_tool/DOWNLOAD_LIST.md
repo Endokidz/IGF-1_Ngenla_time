@@ -1,6 +1,6 @@
 # Papers and figures to download
 
-## Current ask, ranked by impact on the calculator (updated 2026-11-22)
+## Current ask, ranked by impact (updated 2026-11-22, session 4b)
 
 Everything below this section is the original request list, kept for the record. This short list supersedes it.
 
@@ -15,10 +15,13 @@ Everything below this section is the original request list, kept for the record.
 | 5 | **Boas M et al. 2006.** *Eur J Endocrinol* 154:125-9 (PMID 16382001) | 1,962 boys at 0, 3, 18 and 36 months. Also needed to update P1. |
 | 6 | **Feldman KW, Smith DW. 1975.** *J Pediatr* 86:395-8 (PMID 1113226) | Gestational-age-specific newborn standard. The app now warns that the newborn reference is term-only; this paper would let it give a preterm answer instead of only a warning. |
 | 7 | **Schonfeld WA, Beebe GW. 1942.** *J Urol* 48:759-77, pp. 760-777 | Historic 0-25 y reference (only p. 759 has been received). |
-| 8 | Romano-Riquer 2007 (17439530) | Newborn; needed for P1. |
+| 8 | Romano-Riquer 2007 (17439530) | Newborn; needed for P1. It is free on PMC (PMC3653615), but the site blocks automated download; one click for you. |
+| 9 | Bhakhri 2014 (24621243) | India, n = 1,249 newborns. It would more than double the South Asian n in P1. |
 | Low | Tomova 2015 (25781529); Teckchandani 2014 (24145175; addendum item, title now resolved: Indian boys 0-10 y, surgical ward and outpatients, n = 200) | Tomova 2015 is the same group as Tomova 2010 and very probably measured without fat-pad depression, so it would be shown, not pooled. Teckchandani's sample is surgical. |
 
-Addendum item 28082769 is Puri 2017, now processed from open access.
+Addendum item 28082769 is Puri 2017, now processed from open access. It was excluded on 2026-11-22.
+
+For the manuscripts: Avril 2023 (36724045) is open access and the agent can fetch it itself. Its open-access package holds only *Supplementary Table 1*; earlier notes asked for a "Table 2". Chen 2015 (25894960) and Mancini 2021 (34283215) still need you. Mancini measured length without stretching, so it is not SPL.
 
 ---
 

@@ -35,6 +35,7 @@ from scipy.optimize import minimize_scalar
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.join(HERE, "..")
 sys.path.insert(0, os.path.join(ROOT, "..", "spl_manuscripts", "common"))
+sys.path.insert(0, HERE)
 import meta  # noqa: E402
 
 DATA = os.path.join(ROOT, "data")
@@ -314,6 +315,70 @@ def pool_stage(s):
                        ci_lo=math.exp(r1.ci[0]), ci_hi=math.exp(r1.ci[1]), pop_mean_pi_lo=pil, pop_mean_pi_hi=pih, tau_log=r1.tau)
 
 
+# ---------------------------------------------------------------------------
+# Optional population layer
+# ---------------------------------------------------------------------------
+# Region = WHO region of the country where each study was done. It is a proxy for the source population,
+# not the child's ancestry. Beyond the newborn period most regions have 1-2 studies at any age, so the layer
+# pools same-region rows covering the child's age (same eligible rows and REML engine as the age model) and
+# reports k; it never extrapolates a region's offset to ages where that region has no data.
+POPULATIONS = {"AFR": "Sub-Saharan Africa", "AMR": "The Americas", "EMR": "Middle East & North Africa",
+               "EUR": "Europe (including Turkey)", "SEAR": "South & South-East Asia", "WPR": "East Asia & Western Pacific"}
+
+
+def population_model(A, grid):
+    lo_all = A["age_lo_years"].fillna(A["age"] - 0.5).to_numpy()
+    hi_all = A["age_hi_years"].fillna(A["age"] + 0.5).to_numpy()
+    out = {}
+    for reg, label in POPULATIONS.items():
+        m = (A["who_region"] == reg).to_numpy()
+        R, rlo, rhi = A[m].reset_index(drop=True), lo_all[m], hi_all[m]
+        if not len(R):
+            continue
+        cache, cols = {}, {k: [] for k in ("mean", "sd", "pi_lo", "pi_hi", "k_studies", "n", "set")}
+        sets = []
+        for a in grid:
+            idx = tuple(np.where((rlo - 1e-6 <= a) & (a <= rhi + 1e-6))[0])
+            if not idx:
+                for k in cols:
+                    cols[k].append(None)
+                continue
+            if idx not in cache:
+                S = R.iloc[list(idx)]
+                studies = sorted(S.study_id.unique().tolist())
+                if studies not in sets:
+                    sets.append(studies)
+                # 1) combine a study's rows covering this age (fixed effect: adjacent bins at a boundary, or
+                #    several cohorts of one study), so each study counts once; 2) random effects across studies.
+                per = []
+                for sid, g in S.groupby("study_id"):
+                    w = 1 / ((g["sd"] / g["mean"]) ** 2 / g["n"])
+                    ws = 2 * (g["n"] - 1)
+                    per.append((float(np.sum(w * np.log(g["mean"])) / np.sum(w)), float(1 / np.sum(w)),
+                                float(np.sum(ws * (np.log(g["sd"]) + 1 / ws)) / np.sum(ws)), float(1 / np.sum(ws)),
+                                float(np.exp(np.log(g["mean"]).mean()))))
+                P_ = np.array(per)
+                if len(P_) == 1:
+                    res = (math.exp(P_[0, 0]), math.exp(P_[0, 2]), None, None)
+                else:
+                    r1 = meta.random_effects(P_[:, 0], P_[:, 1], "REML", hksj=True)
+                    r2 = meta.random_effects(P_[:, 2], P_[:, 3], "REML", hksj=True)
+                    if len(P_) >= 3:   # normal-approximation interval for a new population's mean, as in the age curve
+                        half = 1.96 * math.sqrt(r1.tau2 + r1.se ** 2)
+                        pil, pih = math.exp(r1.mu - half), math.exp(r1.mu + half)
+                    else:              # two studies: show their range, not a model interval
+                        pil, pih = float(P_[:, 4].min()), float(P_[:, 4].max())
+                    res = (math.exp(r1.mu), math.exp(r2.mu), pil, pih)
+                cache[idx] = res + (len(studies), int(S["n"].sum()), sets.index(studies))
+            mean, sd, pil, pih, ks, n, si = cache[idx]
+            for k, val in zip(("mean", "sd", "pi_lo", "pi_hi", "k_studies", "n", "set"),
+                              (round(mean, 4), round(sd, 4), pil and round(pil, 4), pih and round(pih, 4), ks, n, si)):
+                cols[k].append(val)
+        countries = sorted({str(c).split(" (")[0] for c in R.country.dropna()})
+        out[reg] = dict(label=label, countries=countries, k_studies_total=int(R.study_id.nunique()), sets=sets, **cols)
+    return out
+
+
 def curation_summary(rows):
     """Counts the app quotes in its methods text, computed from the data (never hard-coded)."""
     A = rows[rows.usable & rows.kind.isin(["newborn", "age", "digitized"]) & (rows.age >= 0) & (rows.age <= 19)]
@@ -327,6 +392,10 @@ def curation_summary(rows):
 # ---------------------------------------------------------------------------
 
 def main():
+    import check_decisions  # the decision register and the calculator's rules must agree before anything is built
+    problems = check_decisions.check()
+    if problems:
+        sys.exit("decision_log.csv and tool_curation.csv disagree:\n  " + "\n  ".join(problems))
     rows = load_rows()
     rows["usable"] = rows["mean"].notna() & rows["sd"].notna() & rows["n"].notna() & (rows["n"] >= 5) & rows["age"].notna()
     keep_cols = ["kind", "study_id", "first_author", "year", "country", "who_region", "population", "pmid", "doi",
@@ -377,6 +446,7 @@ def main():
     age_model = dict(k_rows=int(len(A)), k_studies=int(A.study_id.nunique()), n_total=int(A.n.sum()),
                      tau_log=tau, tau2_sd_model=ms["tau2"], knots_t=knots.tolist(),
                      transform="t = ln(age_years + 0.25)", curve=curve)
+    pop_model = population_model(A, grid)
 
     # ---- Pubertal-stage models, one per staging system (never pooled across systems)
     rows["stage_system"] = rows.apply(stage_system_of, axis=1)
@@ -414,7 +484,8 @@ def main():
             pmid=str(r.get("pmid", "")), doi=str(r.get("doi", "")),
             lms=None if pd.isna(r.get("lms_L")) or pd.isna(r.get("lms_S")) else [round(float(r["lms_L"]), 4), round(float(r["lms_M"]), 4), round(float(r["lms_S"]), 5)],
             note=str(r.get("curation_note", "") or "")))
-    model = dict(version=pd.Timestamp.today().strftime("%Y-%m-%d"), age_model=age_model, stage_model=stage_model, rows=studies,
+    model = dict(version=pd.Timestamp.today().strftime("%Y-%m-%d"), age_model=age_model, stage_model=stage_model,
+                 population_model=pop_model, rows=studies,
                  curation=curation_summary(rows))
     def clean(o):
         if isinstance(o, dict):

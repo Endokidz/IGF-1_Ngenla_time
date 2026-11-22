@@ -6,6 +6,8 @@
 - **Pubertal references, one per scale:** genital stage (G), pubic-hair stage (PH) and testis-volume class (TV). The scales are never mapped onto one another.
 - **Per-study results:** each published study's own mean ± SD, with this child's z-score (SDS) and centile against it.
 - **SDS colour scale:** red is below −2.5 SD (micropenis range), amber is −2.5 to −2 SD, green is −2 to +2 SD and blue is above +2 SD.
+- **Headline:** the age z-score, plus, when puberty data are entered, the best-supported puberty z-score.
+- **Optional population layer:** pools only studies from the selected WHO region that cover the child's age, and says when there are none. Region is where a study was done, not ancestry.
 - **Safety alerts** directly under the result, including when the age and pubertal references disagree, a preterm newborn, unconfirmed fat-pad depression, and sparse data.
 
 **Live preview (private):** https://claude.ai/artifact/1LzawkWzmcg7g5YQSLHdRo
@@ -18,7 +20,7 @@ Every value is taken from a published study and stored with its verbatim source 
 
 - **Term newborns** come from the newborn meta-analysis (Paper 1). The newborn reference is for term boys only, and the app says so for a preterm boy.
 - **Childhood and adolescence** come from the studies extracted for this tool.
-- **Curation:** every inclusion, exclusion and flag rule, with its reason, is in `data/tool_curation.csv`. Rows with a measurement concern, such as a fat pad not depressed, gentle stretch, trimmed data or a hospitalised sample, are **shown, not pooled**. The same rule applies to the age model and to the pubertal references.
+- **Curation:** every inclusion, exclusion and flag rule, with its reason, is in `data/tool_curation.csv`. The dated register behind those rules (who decided, when, and the reason category) is `data/decision_log.csv`; screening decisions are in `data/screening_log.csv`. `code/check_decisions.py` keeps the register and the rules in step, and the build fails otherwise. Rows with a measurement concern, such as a fat pad not depressed, gentle stretch, trimmed data or a hospitalised sample, are **shown, not pooled**. The same rule applies to the age model and to the pubertal references.
 
 ## Methods
 

@@ -1,25 +1,22 @@
 # Handoff: SPL reference tool
 
-## START HERE (fresh session, last updated 2026-11-22 at the end of session 4)
+## START HERE (fresh session, last updated 2026-11-22, session 4b)
 
-**Session 4 changed the app's structure; read "Batch 4" below first.** In short:
+**P6, the meta-analysis and calculator paper, now has its own agent: `.claude/agents/spl-meta-analysis.md`.** Its project folder is `spl_manuscripts/P6_SPL_reference_meta_calculator/`. Hand it anything about P6, screening, or which studies are pooled.
 
-- Pubertal references are now three separate scales: G, PH and TV.
-- Flagged rows are excluded from the stage references, which removed Sotos.
-- Wang 2018, Bhat 2015 and Puri 2017 are in, all flagged.
-- The app has a regression suite: `node tests/app.test.js`, 32 checks. Run it after every rebuild.
+**Manuscript gaps (P1–P6)** are listed in `spl_manuscripts/REVIEW_2026-11-22.md`, which came from five independent reviews that checked every number against the data.
 
-**Awaiting author confirmation (implemented as the default, easy to reverse):**
-
-1. Pubertal-reference design: PH and TV inputs added (option a, plus TV used on its own scale rather than option c); G kept and labelled single-study.
-2. Flags on Wang 2018, Bhat 2015 and Puri 2017, with the reasons given in `data/tool_curation.csv`.
-3. Headline choice in adolescence. The headline is still the age z-score; when the age and stage references fall in different SDS bands, a "references disagree" alert now sits directly under it. Should the headline switch to a stage reference once puberty data are entered? This is not yet decided.
+**Decision register.** Every exclude, flag or scale decision lives in `data/decision_log.csv`, reconstructed retroactively from git history on 2026-11-22 (53 entries). `data/tool_curation.csv` must match it: `code/check_decisions.py` runs inside `build_model.py`, and the build fails on any mismatch. Screening decisions are in `data/screening_log.csv` (age search, 710 records; the Tanner and newborn searches are not yet transcribed).
 
 **Decisions confirmed by the author (do not reopen):**
 
 1. **Tomova 2010 is not pooled.** The fat pad was not depressed. It stays visible in the per-study table.
 2. **Gabrich 2007 Tanner staging is unknown.** Its Tanner rows stay out of the genital-stage model.
 3. The same rule as Sotos 2017 applies to any study that documents a non-depressed fat pad.
+4. **Session 4 defaults approved (2026-11-22).** G, PH and TV are separate scales, and G is labelled single-study. Flagged rows are not pooled by stage.
+5. **Wang 2018, Bhat 2015 and Puri 2017 are EXCLUDED entirely (2026-11-22).** They are not shown in the app. The reasons are in the register.
+6. **Headline shows both scores (2026-11-22).** The age card always appears. When puberty data are entered, a second card shows the best-supported puberty reference: n reported and not provisional, then more studies, then larger n.
+7. **Population layer, optional (2026-11-22).** Region (WHO) is where a study was done, not ancestry. Rows covering the child's age are pooled within each study, then by random effects across studies. With 2 studies the range is shown; with 3 or more, an interval for a new population's mean. The layer is never extrapolated to ages without regional data.
 
 **Still missing:**
 
@@ -52,7 +49,7 @@
 **After each batch:**
 
 1. Rebuild the model and the app.
-2. Run `node tests/app.test.js`. Every check must pass.
+2. Run `node tests/app.test.js`. Every check must pass (41 checks). `build_model.py` has already checked the decision register.
 3. Check `figures/pooled_curve.png` and `k_local`.
 4. Read the artifact, then republish it with `url`.
 5. Update this file.

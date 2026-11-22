@@ -46,7 +46,12 @@ input:focus-visible, select:focus-visible, button:focus-visible, summary:focus-v
 fieldset.puberty { border: 1px solid var(--rule); border-radius: 8px; padding: 10px 12px 12px; margin: 0; display: grid; gap: 10px; min-width: 0 }
 fieldset.puberty legend { font-weight: 500; font-size: .92rem; padding: 0 4px }
 .results { display: grid; gap: 16px }
-.headline { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px }
+.headline { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px }
+.card { display: grid; gap: 4px; align-content: start; border: 1px solid var(--rule); border-radius: 8px; padding: 10px 12px; background: var(--paper) }
+.card .k { font-size: .75rem; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-3) }
+.card .v { font-family: var(--f-num); font-size: 1.7rem; font-weight: 500; font-variant-numeric: tabular-nums; line-height: 1.2 }
+.card .s { font-size: .82rem; color: var(--ink-2); font-family: var(--f-num) }
+.card .s.sub { font-family: var(--f-ui); color: var(--warn) }
 .stat { display: grid; gap: 2px }
 .stat .k { font-size: .75rem; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-3) }
 .stat .v { font-family: var(--f-num); font-size: 1.6rem; font-weight: 500; font-variant-numeric: tabular-nums }
@@ -114,6 +119,8 @@ td.z-info { background: var(--accent-soft); color: var(--accent); font-weight: 6
           </div>
           <label for="tv">Testis volume, mL <span class="hint">Prader orchidometer, larger testis</span><input id="tv" type="number" min="1" max="35" step="1" inputmode="numeric"></label>
         </fieldset>
+        <label for="pop">Population <span class="hint">optional; region where the reference studies were done</span>
+          <select id="pop"><option value="">All populations (pooled)</option></select></label>
         <div class="checks" role="group" aria-label="Measurement conditions">
           <label for="cFat"><input id="cFat" type="checkbox"> Fat pad fully depressed to the pubic bone</label>
           <label for="cObese"><input id="cObese" type="checkbox"> BMI ≥ 95th centile</label>
@@ -238,7 +245,7 @@ td.z-info { background: var(--accent-soft); color: var(--accent); font-weight: 6
       TV: isFinite(tvMl) && !tvErr ? tvClass(tvMl) : null,
     };
     return { age, src, err: err || splErr || tvErr, spl: isFinite(spl) && !splErr ? spl : null, stages, tvMl: isFinite(tvMl) ? tvMl : null,
-      fat: $("cFat").checked, obese: $("cObese").checked, early: $("cEarly").checked, preterm: $("cPreterm").checked };
+      fat: $("cFat").checked, obese: $("cObese").checked, early: $("cEarly").checked, preterm: $("cPreterm").checked, pop: $("pop").value || null };
   }
   // Testis volume -> the source study's own class (Soydan 2012: 1-3.9, 4-11.9, 12-20, >20 mL); never mapped onto G stages
   function tvClass(ml) {
@@ -248,6 +255,16 @@ td.z-info { background: var(--accent-soft); color: var(--accent); font-weight: 6
   }
   const SM = M.stage_model || {};
   const SYS = ["G", "PH", "TV"];
+  const PM = M.population_model || {};
+  function pooledPop(reg, age, spl) {
+    const p = PM[reg]; if (!p) return null;
+    const i = Math.max(0, Math.min(C.age.length - 1, Math.round(age / (C.age[1] - C.age[0]))));
+    if (p.mean[i] == null) return { mean: null };
+    const r = { mean: p.mean[i], sd: p.sd[i], plo: p.pi_lo[i], phi: p.pi_hi[i], k: p.k_studies[i], n: p.n[i], studies: p.sets[p.set[i]] };
+    r.z = (spl - r.mean) / r.sd; r.cut = r.mean - 2.5 * r.sd;
+    r.zLo = r.phi != null ? (spl - r.phi) / r.sd : null; r.zHi = r.plo != null ? (spl - r.plo) / r.sd : null;
+    return r;
+  }
   const stageName = (sys, st) => sys === "TV" ? `TV class ${st} (${(SM.TV.class_labels || [])[st - 1] || ""})` : `${sys}${st}`;
   const studyLabel = (id) => { const r = M.rows.find((x) => x.study === id); return r ? `${r.author} ${r.year || ""}`.trim() : id; };
 
@@ -277,11 +294,12 @@ td.z-info { background: var(--accent-soft); color: var(--accent); font-weight: 6
     if (r.stage_system === "unknown") return st.G === r.tanner || st.PH === r.tanner;
     return st[r.stage_system] != null && st[r.stage_system] === r.tanner;
   }
-  function studyRows(age, stages, spl) {
+  function studyRows(age, stages, spl, pop) {
     const tol = 1e-6;
     return M.rows.filter((r) => r.tanner != null ? stageMatch(r, stages) : (age >= r.age_lo - tol && age <= r.age_hi + tol))
       .map((r) => Object.assign({}, r, { z: r.lms ? lmsZ(spl, r.lms) : (r.sd ? (spl - r.mean) / r.sd : null) }))
-      .sort((a, b) => (a.tanner != null) - (b.tanner != null) || a.concern - b.concern || (a.region || "").localeCompare(b.region || "") || a.mean - b.mean);
+      .map((r) => Object.assign(r, { popMatch: !!pop && r.region === pop }))
+      .sort((a, b) => (a.tanner != null) - (b.tanner != null) || b.popMatch - a.popMatch || a.concern - b.concern || (a.region || "").localeCompare(b.region || "") || a.mean - b.mean);
   }
 
   // ---- render -----------------------------------------------------------
@@ -293,19 +311,26 @@ td.z-info { background: var(--accent-soft); color: var(--accent); font-weight: 6
     const A = pooledAge(I.age, I.spl);
     const ST = SYS.filter((s) => I.stages[s] != null).map((s) => pooledStage(s, I.stages[s], I.spl)).filter(Boolean);
     const STz = ST.filter((t) => !t.empty);
-    const rows = studyRows(I.age, I.stages, I.spl);
+    const rows = studyRows(I.age, I.stages, I.spl, I.pop);
     const ageTxt = I.age < 1 / 12 ? `${Math.round(I.age * 365.25)} days` : `${Math.floor(I.age)} y ${Math.round((I.age % 1) * 12)} mo`;
     const stTxt = SYS.filter((s) => I.stages[s] != null).map((s) => s === "TV" ? `testis ${fmt(I.tvMl, 0)} mL` : stageName(s, I.stages[s])).join(" · ");
     let h = `<p class="agebar">Calculated for: <strong>${I.src === "days" ? "newborn, " + esc(ageTxt) : esc(ageTxt)}</strong>${stTxt ? " · " + esc(stTxt) : ""} · SPL <strong>${fmt(I.spl)} cm</strong></p>`;
-    const primary = A || STz[0] || null;
+    const P = I.pop ? pooledPop(I.pop, I.age, I.spl) : null;
+    // Headline shows the age reference AND, when puberty data are entered, the best-supported puberty reference
+    // (author decision 2026-11-22). Best supported: n reported and not provisional, then more studies, then larger n.
+    const rank = (t) => (t.provisional ? 0 : 2) + Math.min(t.k_studies || 0, 3) + (t.n || 0) / 1e6;
+    const bestStage = STz.slice().sort((a, b) => rank(b) - rank(a))[0] || null;
+    const primary = A || bestStage || null;
     const pLabel = A ? "Age" : (primary ? stageName(primary.sys, primary.stage) : "");
+    const card = (t, title, sub) => `<div class="card"><span class="k">${esc(title)}</span>
+        <span class="v">${fz(t.z)}</span><span class="s">${chip(t.z)}</span>
+        <span class="s">Centile ${fpct(t.z)} · mean ${fmt(t.mean)} ± ${fmt(t.sd)} cm · −2.5 SD = ${fmt(t.cut)} cm</span>
+        ${sub ? `<span class="s sub">${sub}</span>` : ""}</div>`;
     if (primary) {
-      h += `<div class="headline">
-        <div class="stat"><span class="k">z-score (${esc(A ? "age" : pLabel)})</span><span class="v">${fz(primary.z)}</span><span class="s">${chip(primary.z)}</span></div>
-        <div class="stat"><span class="k">Centile</span><span class="v">${fpct(primary.z)}</span><span class="s">percent of boys measure shorter</span></div>
-        <div class="stat"><span class="k">Reference mean ± SD</span><span class="v">${fmt(primary.mean)} <small>± ${fmt(primary.sd)}</small></span><span class="s">−2.5 SD = ${fmt(primary.cut)} cm</span></div>
-      </div>`;
+      h += `<div class="headline">${A ? card(A, "z-score · age reference", "") : ""}${bestStage ? card(bestStage, `z-score · puberty reference (${stageName(bestStage.sys, bestStage.stage)})`,
+        bestStage.k_studies === 1 ? "Single study" + (bestStage.provisional ? ", n not reported" : "") : (bestStage.provisional ? "Provisional: n not reported by every study" : "")) : ""}</div>`;
       const extra = STz.filter((t) => t !== primary).map((t) => [t.z, t.sys === "TV" ? "TV" : stageName(t.sys, t.stage)]);
+      if (P && P.z != null) extra.push([P.z, "Population"]);
       h += sdsBar(primary.z, pLabel, A ? [A.zLo, A.zHi] : (primary.zLo != null ? [primary.zLo, primary.zHi] : null),
         extra, rows.filter((r) => r.z != null && !r.concern && (r.tanner == null) === !!A).map((r) => r.z));
       h += "%%ALERTS%%";   // safety alerts sit directly under the headline, before the explanatory blocks
@@ -316,6 +341,19 @@ td.z-info { background: var(--accent-soft); color: var(--accent); font-weight: 6
         Published populations differ in their mean. Across the 95% range of plausible population means (${fmt(A.plo)}–${fmt(A.phi)} cm), this child's z-score lies between <strong>${fz(A.zLo)}</strong> and <strong>${fz(A.zHi)}</strong>.</p></div>`;
     } else {
       h += `<div class="refblock"><h3>Pooled age reference</h3><p class="note">The pooled database does not cover this age yet. Use the study rows below where available.</p></div>`;
+    }
+    if (I.pop) {
+      const pm = PM[I.pop];
+      if (!P || P.mean == null) {
+        h += `<div class="refblock"><h3>Population: ${esc(pm.label)}</h3><p class="note">No eligible study from this region covers this age, so the pooled all-population reference above applies. Studies from this region (${esc(pm.countries.join(", "))}) cover other ages only.</p></div>`;
+      } else {
+        const src = P.studies.map(studyLabel).map(esc).join(", ");
+        h += `<div class="refblock"><h3>Population: ${esc(pm.label)} ${chip(P.z)}</h3>
+          <p class="note">Mean ${fmt(P.mean)} ± ${fmt(P.sd)} cm from ${src} (n = ${P.n.toLocaleString()}); z ${fz(P.z)}, centile ${fpct(P.z)}.
+          ${P.k === 1 ? "<strong>Single study:</strong> this is one population's value, and its measurement method is inseparable from its population. "
+            : `Across ${P.k === 2 ? "the two study means" : "plausible populations in this region"} (${fmt(P.plo)}–${fmt(P.phi)} cm): z ${fz(P.zLo)} to ${fz(P.zHi)}. `}
+          Region is where the studies were done, not this child's ancestry. In newborns, differences between studies within one country are as large as between regions, which points to measurement method more than ancestry. Use this as context, not as a different diagnostic threshold.</p></div>`;
+      }
     }
     SYS.filter((s) => I.stages[s] != null).forEach((s) => {
       const st = I.stages[s], T = ST.find((t) => t.sys === s), nm = stageName(s, st);
@@ -338,14 +376,17 @@ td.z-info { background: var(--accent-soft); color: var(--accent); font-weight: 6
     if (soy.length === 2)
       h += `<p class="note">The pubic-hair and testis-volume references both rest, wholly or partly, on the same Soydan 2012 boys. Agreement between them is not independent confirmation.</p>`;
     const al = [];
-    const zAll = [A ? A.z : null].concat(STz.map((t) => t.z)).filter((z) => z != null && isFinite(z));
+    const zAll = [A ? A.z : null].concat(STz.map((t) => t.z), P && P.z != null ? [P.z] : []).filter((z) => z != null && isFinite(z));
     const zMin = zAll.length ? Math.min(...zAll) : null;
     if (primary && Math.abs(primary.z) > 5) al.push(`<div class="alert crit">A z-score of ${fz(primary.z)} is implausible. Check the age (years vs newborn days) and the length (cm).</div>`);
     const cat = (z) => z < -2.5 ? 3 : z < -2 ? 2 : z > 2 ? 0 : 1;
-    if (A && STz.some((t) => cat(t.z) !== cat(A.z) && Math.max(cat(t.z), cat(A.z)) >= 2)) {
-      const worst = Math.max(cat(A.z), ...STz.map((t) => cat(t.z)));
-      al.push(`<div class="alert ${worst === 3 ? "crit" : ""}"><strong>The references disagree.</strong> Age: z ${fz(A.z)}; ${STz.map((t) => `${esc(stageName(t.sys, t.stage))}: z ${fz(t.z)}`).join("; ")}.
-        In puberty the age reference averages boys at different stages, so it can falsely reassure about a boy whose maturity is ahead of his age, or alarm about one who is behind. Do not rely on the age z-score alone here. The stage references rest on only 1–2 studies, so neither answer is definitive.</div>`);
+    const others = STz.map((t) => [stageName(t.sys, t.stage), t.z]).concat(P && P.z != null ? [["Population", P.z]] : []);
+    if (A && others.some(([, z]) => cat(z) !== cat(A.z) && Math.max(cat(z), cat(A.z)) >= 2)) {
+      const worst = Math.max(cat(A.z), ...others.map(([, z]) => cat(z)));
+      const why = [STz.length ? "In puberty the age reference averages boys at different stages, so it can falsely reassure about a boy whose maturity is ahead of his age, or alarm about one who is behind." : "",
+        P && P.z != null ? "The population reference rests on few studies whose measurement methods differ." : ""].filter(Boolean).join(" ");
+      al.push(`<div class="alert ${worst === 3 ? "crit" : ""}"><strong>The references disagree.</strong> Age: z ${fz(A.z)}; ${others.map(([l, z]) => `${esc(l)}: z ${fz(z)}`).join("; ")}.
+        ${why} Do not rely on any single z-score here; none of these answers is definitive.</div>`);
     }
     if (zMin != null && zMin < -2) al.push(`<div class="alert ${zMin < -2.5 ? "crit" : ""}">At the −2.5 SD threshold a single measurement is unreliable. With realistic measurement error, about two-thirds of single-measurement "micropenis" labels are wrong. Confirm with a second trained examiner before you investigate.</div>`);
     if (A && A.kLocal != null && A.kLocal <= 2) al.push(`<div class="alert">Sparse data: at this age the pooled curve rests on ${A.kLocal} stud${A.kLocal === 1 ? "y" : "ies"}. Weigh the study-by-study rows below as heavily as the pooled value.</div>`);
@@ -376,7 +417,7 @@ td.z-info { background: var(--accent-soft); color: var(--accent); font-weight: 6
         <td class="num">${fmt(r.mean)} ± ${r.sd != null ? fmt(r.sd) : "–"}<span class="sub">${r.lms ? "LMS from published SD lines · skew-correct z" : esc(r.derivation)}</span></td>
         <td>${esc(r.tanner != null ? (r.stage_system === "unknown" ? `Tanner ${r.tanner} (system not stated)` : stageName(r.stage_system, r.tanner)) + (r.age_label ? " · " + r.age_label : "") : r.age_label)}</td>
         <td class="num">${r.n ?? "–"}</td>
-        <td>${esc(r.country)}<span class="sub">${esc(r.region)}</span></td>
+        <td>${esc(r.country)}<span class="sub">${esc(r.region)}${r.popMatch ? " · matches selected population" : ""}</span></td>
         <td>${esc(r.fatpad)}<span class="sub">${esc((r.technique || "").slice(0, 90))}${(r.technique || "").length > 90 ? "…" : ""}</span></td></tr>`;
     }).join("");
   }
@@ -437,6 +478,13 @@ td.z-info { background: var(--accent-soft); color: var(--accent); font-weight: 6
       return `${esc(SM[s].label)}: ${pooled.length ? `${pooled.map((k) => stageName(s, +k).replace(/ \(.*/, "")).join(", ")} from ${esc(studies.join(", "))}${prov ? " (provisional where n is unreported)" : ""}` : "no eligible data"}${shown.length ? `; shown, not pooled: ${esc(shown.join(", "))}` : ""}.`;
     }).join(" ");
   }
+  function popText() {
+    return Object.values(PM).map((p) => {
+      const cov = C.age.filter((_, i) => p.mean[i] != null);
+      const kmax = Math.max(...p.k_studies.filter((k) => k != null));
+      return `${esc(p.label)} ${cov.length ? (cov[cov.length - 1] < 0.1 ? "newborns only" : `0–${fmt(cov[cov.length - 1], 0)} y`) : "none"} (up to ${kmax} stud${kmax === 1 ? "y" : "ies"} at any age)`;
+    }).join("; ");
+  }
   function methods() {
     const am = M.age_model;
     $("methods").innerHTML = `
@@ -452,6 +500,7 @@ td.z-info { background: var(--accent-soft); color: var(--accent); font-weight: 6
       <p><strong>Data density.</strong> Number of studies contributing to the pooled curve near each age (computed from the current data): ${densityText()}. The curve is least certain where this number is 2 or fewer, and the app warns there.</p>
       <p><strong>Shown, not pooled.</strong> ${(M.curation && M.curation.studies_flagged.length) ? `${M.curation.n_flagged_rows} age-group rows from ${M.curation.studies_flagged.length} studies (${M.curation.studies_flagged.map((s) => esc(studyLabel(s))).join(", ")}) have a pre-specified measurement concern, such as a fat pad not depressed, gentle stretch, trimmed data or a hospitalised sample. They appear in the study table and as hollow dots, but do not enter the pooled curve.` : "None."}</p>
       <p><strong>Pubertal references.</strong> Each staging scale is referenced separately and never mapped onto another: genital stage (G), pubic-hair stage (PH), and testis-volume class (TV, using the source study's own classes). Within a scale, random-effects pooling is used where every study reports n; otherwise an equal-weight average is labelled provisional. Rows with a measurement concern are shown, not pooled, exactly as in the age model. ${stageText()}</p>
+      <p><strong>Population layer (optional).</strong> Pools only studies from the selected WHO region whose age band covers the child's age: rows are combined within each study, then by random effects across studies, using the same eligible rows as the age model. With one study the value is that study's; with two, their range is shown; with three or more, the interval for a new population's mean. Coverage now: ${popText()}. Region is where a study was done, not the child's ancestry, and between-study differences within one country are as large as between regions, so method and population cannot be separated with these data.</p>
       <p><strong>Limitations.</strong></p>
       <ul>
         <li>Published populations differ as much in their mean as children differ within a population, and most of that difference is local method rather than ancestry. A technique-matched local reference, where one exists, is preferable.</li>
@@ -471,7 +520,8 @@ td.z-info { background: var(--accent-soft); color: var(--accent); font-weight: 6
     if (id === "ageD" && $("ageD").value !== "") { $("ageY").value = ""; $("ageM").value = ""; }
     render();
   };
-  ["ageY", "ageM", "ageD", "stG", "stPH", "tv", "spl", "cFat", "cObese", "cEarly", "cPreterm"].forEach((id) => { $(id).addEventListener("input", onEdit(id)); $(id).addEventListener("change", onEdit(id)); });
+  Object.entries(PM).forEach(([k, p]) => { const o = document.createElement("option"); o.value = k; o.textContent = `${p.label} (${p.countries.join(", ")})`; $("pop").appendChild(o); });
+  ["ageY", "ageM", "ageD", "stG", "stPH", "tv", "spl", "pop", "cFat", "cObese", "cEarly", "cPreterm"].forEach((id) => { $(id).addEventListener("input", onEdit(id)); $(id).addEventListener("change", onEdit(id)); });
   $("f").addEventListener("submit", (e) => e.preventDefault());
   methods();
   render();

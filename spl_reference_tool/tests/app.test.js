@@ -45,8 +45,8 @@ function check(name, cond, detail = "") {
       else await el.fill(String(v));
     }
   };
-  const reset = () => set({ ageY: "", ageM: "", ageD: "", stG: "", stPH: "", tv: "", spl: "", cPreterm: false, cEarly: false, cObese: false, cFat: true });
-  const headlineZ = () => page.locator(".headline .stat .v").first().innerText();
+  const reset = () => set({ ageY: "", ageM: "", ageD: "", stG: "", stPH: "", tv: "", pop: "", spl: "", cPreterm: false, cEarly: false, cObese: false, cFat: true });
+  const headlineZ = () => page.locator(".headline .card .v").first().innerText();
   const out = () => page.locator("#out").innerText();
   const tableText = () => page.locator("#tbl tbody").innerText();
   const stageCells = () => page.locator("#tbl tbody tr td:nth-child(5)").allInnerTexts();
@@ -101,12 +101,37 @@ function check(name, cond, detail = "") {
   const t15 = await tableText();
   check("no 'Genital stage'/'Pubic hair' rows without a stage entered", !/Genital stage|Pubic hair/.test(t15));
 
-  console.log("Open-access tables are shown, not pooled");
+  console.log("Excluded studies (author decision 2026-11-22) are absent everywhere");
   await reset(); await set({ ageY: 7, ageM: 0, spl: 4.5 });
   const t7 = await tableText();
-  check("Wang 2018 and Bhat 2015 rows present at 7 y", /Wang YN 2018/.test(t7) && /Bhat 2015/.test(t7));
-  const flagged = await page.locator("#tbl tbody tr", { hasText: "Wang YN 2018" }).first().innerText();
-  check("Wang 2018 row carries the concern flag", /⚠/.test(flagged));
+  check("Wang 2018, Bhat 2015 and Puri 2017 absent from the table at 7 y", !/Wang YN 2018|Bhat 2015|Puri 2017/.test(t7));
+  check("excluded studies absent from model rows", !M.rows.some((r) => /^(Wang2018_CHN|Bhat2015_IND|Puri2017_IND)$/.test(r.study)));
+
+  console.log("Headline shows age and puberty (author decision 2026-11-22)");
+  await reset(); await set({ ageY: 14, ageM: 0, spl: 9 });
+  check("no puberty entered: one headline card (age)", (await page.locator(".headline .card").count()) === 1);
+  await set({ stPH: 4, tv: 15 });
+  const cards = await page.locator(".headline .card").allInnerTexts();
+  check("puberty entered: two headline cards, age then puberty", cards.length === 2 && /age reference/i.test(cards[0]) && /puberty reference/i.test(cards[1]), cards.join(" || "));
+  check("puberty card uses the best-supported scale (TV class with n reported beats provisional PH)", /TV class 3/i.test(cards[1] || ""), cards[1]);
+  const tv3 = M.stage_model.TV.stages["3"];
+  check("puberty card z matches the model", (cards[1] || "").includes(fz((9 - tv3.mean) / tv3.sd)));
+
+  console.log("Optional population layer");
+  const PMm = M.population_model, idx = (a) => Math.round(a / (C.age[1] - C.age[0]));
+  await reset(); await set({ ageY: 7, ageM: 0, spl: 4.5, pop: "WPR" });
+  const w = PMm.WPR, i7 = idx(7);
+  const oPop = await out();
+  check("WPR at 7 y: population block with the model's mean and z", oPop.includes(`Population: ${w.label}`) && oPop.includes(fz((4.5 - w.mean[i7]) / w.sd[i7])));
+  const firstRow = await page.locator("#tbl tbody tr").first().innerText();
+  check("matched-population rows listed first and marked", /matches selected population/.test(firstRow));
+  await reset(); await set({ ageY: 7, ageM: 0, spl: 4.5, pop: "AFR" });
+  check("AFR at 7 y: says no regional study covers this age", /No eligible study from this region covers this age/.test(await out()));
+  await reset(); await set({ ageD: 2, spl: 2.6, pop: "AFR" });
+  const a0 = PMm.AFR;
+  check("AFR newborn: pooled from 4 studies with an interval", /Population: Sub-Saharan Africa/.test(await out()) && a0.k_studies[0] === 4 && a0.pi_lo[0] != null);
+  await reset(); await set({ ageY: 15, ageM: 0, spl: 7.2, pop: "AMR" });
+  check("population z in a different band from age z triggers the disagreement alert", /The references disagree.*Population/s.test(await out()));
 
   console.log("Safety alerts");
   await reset(); await set({ ageD: 2, spl: 2.4, cPreterm: true });
