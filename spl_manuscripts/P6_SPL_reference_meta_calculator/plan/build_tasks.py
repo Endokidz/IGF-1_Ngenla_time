@@ -24,7 +24,8 @@ add("PI-04", "0 Team", "PI", 10, "Decide M7, M8", "Testis volume as primary pube
 add("PI-05", "0 Team", "PI", 15, "Approve screening criteria (M10)", "Read the criteria block in review/AI_SCREENING_PROTOCOL.md; approve or edit.", "Criteria frozen", ["PI-04"])
 add("PI-06", "0 Team", "PI", 10, "Invite the resident", "Send the agent-drafted invitation (role, ~48 h over ~3 months, co-authorship).", "Resident agreed", ["PI-01"])
 add("PI-07", "0 Team", "PI", 10, "Invite a methodologist/statistician co-author", "Send the agent-drafted email (2-3 h of review at protocol and results stage).", "Sent", ["PI-01"])
-add("PI-08", "0 Team", "PI", 15, "Choose the target journal", "Pick from the Q1 shortlist in SUBMISSION_PLAN.md (fit, TAU rules, APC cover).", "Journal fixed", ["PI-01"])
+add("PI-08", "0 Team", "PI", 15, "Verify the journals' JCR rank", "In JCR via the TAU library, check the quartile of J Pediatr, Eur J Endocrinol and Hum Reprod in their best category (year of publication rule). Note them for the agent.", "Ranks recorded", ["PI-01"])
+add("PI-08b", "0 Team", "PI", 10, "Confirm 'original article' status with the TAU library", "Send the agent-drafted 3-line email to the medical library's publication-list contact: will a meta-analysis + calculator in J Pediatr (Original Article) be listed as an original article?", "Answer recorded; journal fixed", ["PI-08"])
 add("PI-09", "0 Team", "PI", 10, "Authorship and CRediT", "Approve the agent-drafted author order and CRediT roles.", "Approved", ["PI-06", "PI-07"])
 # ---- Phase 1: protocol + registration ----------------------------------------------------------------------------
 add("AI-01", "1 Protocol", "AI", 0, "Draft PRISMA-P protocol", "Agent drafts the protocol from README, M1-M10 and the criteria.", "Draft in plan/", ["PI-05"])

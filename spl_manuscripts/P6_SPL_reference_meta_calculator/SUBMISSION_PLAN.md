@@ -27,7 +27,45 @@ The only competing paper is Negri et al., *BJU Int* 2026 (doi 10.1111/bju.70356)
 
 ## 2. Target journal
 
-To be filled in when the research comes back. Rule: Q1 under TAU's definition; meta-analyses published as **original articles**; APC covered by a TAU agreement where possible.
+### How TAU judges a journal
+
+Sources: Faculty of Medicine instructions (2025) and the medical library's publication-list service.
+
+- Metrics are JCR (Web of Science) only. The journal's quartile is taken for the year of publication, in whichever of its categories scores highest.
+- Q1–Q4 is credited for **original articles only**; reviews are listed separately.
+- There is no top-10% tier and no Scimago/SJR. No list of excluded publishers was found.
+
+### The trap: Web of Science "Review" indexing
+
+Web of Science indexes a paper as a **Review** in either of two cases:
+
+- the journal publishes it in a review section;
+- the title contains "systematic review" or "review", and the term appears again in the abstract or introduction.
+
+So we need both of the following:
+
+- a journal that publishes meta-analyses as **original articles**;
+- a title that presents the paper as what it genuinely is: **a meta-analytic reference construction with a calculator**. For example: *"Stretched penile length from birth to 18 years: meta-analytic centiles and a validated z-score calculator"*. The abstract still says "systematic review and meta-analysis", as PRISMA requires.
+
+Adding **original data** (external validation on your clinic's measurements) settles the question beyond doubt: the paper becomes a development-and-validation study.
+
+### Shortlist (cascade)
+
+Quartiles marked ✱ must be verified in JCR (bit PI-08).
+
+| Order | Journal | Why | Main risk | Cost to you |
+|---|---|---|---|---|
+| **1 (recommended)** | **Journal of Pediatrics**: Q1 Pediatrics ✱, JIF ~3.6 | Publishes paediatric reference curves and requires PRISMA; meta-analyses run as Original Articles; the readership uses the tool | 4,000-word limit including the abstract; article type to be confirmed with the editorial office | Nothing on the subscription route; open access under the TAU–Elsevier agreement (quota) |
+| 2 | **European Journal of Endocrinology**: Q1 Endocrinology & Metabolism, JIF ~5–6 ✱ | Best fit for paediatric endocrinology | Has its own "Systematic Review and Meta-Analysis" type, which may count as neither. Submit as an **Original Research Article** only if external validation data are included | OUP hybrid; open access under the TAU–OUP agreement (quota runs out mid-year) |
+| 3 | **Human Reproduction**: Q1 Ob/Gyn (5/143) ✱, JIF ~6.8 | Publishes meta-analyses in the original-research format, including genital-development ones | Scope fit is moderate | OUP hybrid; open access under the TAU–OUP agreement |
+| Stretch (optional) | **JAMA Pediatrics**: Q1, JIF ~17 | Meta-analyses are published as *Original Investigation*, the cleanest fit with TAU | Low acceptance odds without external validation; a desk rejection costs about 1–2 weeks | No fee; no TAU agreement needed |
+
+**Excluded:**
+
+- JCEM, Hormone Research in Paediatrics, Pediatrics and Frontiers in Endocrinology: they publish meta-analyses as reviews or a separate type.
+- Journal of Pediatric Urology and Endocrine Connections: not Q1.
+- BJU International: it published Negri, so a second meta-analysis would likely look redundant.
+- Human Reproduction Update: it publishes reviews only.
 
 ## 3. How the work is split
 
