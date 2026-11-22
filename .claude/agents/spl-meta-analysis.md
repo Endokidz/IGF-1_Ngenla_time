@@ -64,6 +64,14 @@ The calculator is published as a private artifact; HANDOFF.md has the URL. Repub
 
 ## Backlog (in order)
 
+0. **Human dual review** (`spl_manuscripts/P6_SPL_reference_meta_calculator/review/`). When the two completed workbooks arrive:
+   - run `reconcile.py`;
+   - send the conflicts to the adjudicator;
+   - apply the overturns to the register and to `tool_curation.csv`, with `decided_by` = "dual human review (…)";
+   - rebuild and test.
+
+   Rebuild the pack with `build_review_pack.py` whenever the data change before the review starts.
+
 1. **Retroactive screening.** Transcribe the exclusions in `spl_reference_tool/data/search_log_tanner.md` and `spl_manuscripts/P1_newborn_SPL_meta/data/search_log.md` into `screening_log.csv`, so that every search is in one register. Then write `code/prisma_p6.py` to compute the P6 flow.
 2. **Raise the open methodological decisions with the author** (see the README). The most important is the primary rule for measurement-concern rows: P1 includes them in its primary analysis; the calculator never pools them.
 3. **Draft the protocol-level Methods** (eligibility, information sources, selection, extraction, synthesis, sensitivity analyses) as `manuscript_P6_….md`. Mark every section not yet supportable as pending.

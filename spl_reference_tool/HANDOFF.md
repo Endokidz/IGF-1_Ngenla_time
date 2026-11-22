@@ -4,6 +4,8 @@
 
 **P6, the meta-analysis and calculator paper, now has its own agent: `.claude/agents/spl-meta-analysis.md`.** Its project folder is `spl_manuscripts/P6_SPL_reference_meta_calculator/`. Hand it anything about P6, screening, or which studies are pooled.
 
+**Human dual review pack** (blinded workbook, hidden key, reconciliation with κ): `spl_manuscripts/P6_SPL_reference_meta_calculator/review/`. Proposed main-analysis rule M1 is in its README.
+
 **Manuscript gaps (P1–P6)** are listed in `spl_manuscripts/REVIEW_2026-11-22.md`, which came from five independent reviews that checked every number against the data.
 
 **Decision register.** Every exclude, flag or scale decision lives in `data/decision_log.csv`, reconstructed retroactively from git history on 2026-11-22 (53 entries). `data/tool_curation.csv` must match it: `code/check_decisions.py` runs inside `build_model.py`, and the build fails on any mismatch. Screening decisions are in `data/screening_log.csv` (age search, 710 records; the Tanner and newborn searches are not yet transcribed).
@@ -14,7 +16,7 @@
 2. **Gabrich 2007 Tanner staging is unknown.** Its Tanner rows stay out of the genital-stage model.
 3. The same rule as Sotos 2017 applies to any study that documents a non-depressed fat pad.
 4. **Session 4 defaults approved (2026-11-22).** G, PH and TV are separate scales, and G is labelled single-study. Flagged rows are not pooled by stage.
-5. **Wang 2018, Bhat 2015 and Puri 2017 are EXCLUDED entirely (2026-11-22).** They are not shown in the app. The reasons are in the register.
+5. **Wang 2018, Bhat 2015 and Puri 2017 are visible but not pooled (2026-11-22, revised the same day after a brief full exclusion).** They are shown with ⚠ and never enter the pooled curve. The reasons, and the D026→D054 history, are in the register.
 6. **Headline shows both scores (2026-11-22).** The age card always appears. When puberty data are entered, a second card shows the best-supported puberty reference: n reported and not provisional, then more studies, then larger n.
 7. **Population layer, optional (2026-11-22).** Region (WHO) is where a study was done, not ancestry. Rows covering the child's age are pooled within each study, then by random effects across studies. With 2 studies the range is shown; with 3 or more, an interval for a new population's mean. The layer is never extrapolated to ages without regional data.
 

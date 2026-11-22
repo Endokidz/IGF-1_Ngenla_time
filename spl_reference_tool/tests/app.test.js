@@ -101,11 +101,14 @@ function check(name, cond, detail = "") {
   const t15 = await tableText();
   check("no 'Genital stage'/'Pubic hair' rows without a stage entered", !/Genital stage|Pubic hair/.test(t15));
 
-  console.log("Excluded studies (author decision 2026-11-22) are absent everywhere");
+  console.log("Wang/Bhat/Puri: visible but not pooled (author decision 2026-11-22, revised)");
   await reset(); await set({ ageY: 7, ageM: 0, spl: 4.5 });
   const t7 = await tableText();
-  check("Wang 2018, Bhat 2015 and Puri 2017 absent from the table at 7 y", !/Wang YN 2018|Bhat 2015|Puri 2017/.test(t7));
-  check("excluded studies absent from model rows", !M.rows.some((r) => /^(Wang2018_CHN|Bhat2015_IND|Puri2017_IND)$/.test(r.study)));
+  check("Wang 2018 and Bhat 2015 rows visible at 7 y", /Wang YN 2018/.test(t7) && /Bhat 2015/.test(t7));
+  const wRow = await page.locator("#tbl tbody tr", { hasText: "Wang YN 2018" }).first().innerText();
+  check("Wang 2018 row carries the concern flag", /⚠/.test(wRow));
+  check("all three are flagged in the model rows (never pooled)", ["Wang2018_CHN", "Bhat2015_IND", "Puri2017_IND"].every((id) => M.rows.filter((r) => r.study === id).length > 0 && M.rows.filter((r) => r.study === id).every((r) => r.concern)));
+  check("none of the three is counted in the pooled age model", M.curation.studies_flagged.includes("Wang2018_CHN") && M.curation.studies_flagged.includes("Bhat2015_IND") && M.curation.studies_flagged.includes("Puri2017_IND"));
 
   console.log("Headline shows age and puberty (author decision 2026-11-22)");
   await reset(); await set({ ageY: 14, ageM: 0, spl: 9 });

@@ -32,7 +32,7 @@ Do not reopen these.
 1. **Fat-pad rule** (2026-11-18). Studies that document a non-depressed fat pad are not pooled.
    - Tomova 2010 is shown, not pooled.
    - Gabrich 2007's staging system is unknown, so it is never pooled by stage.
-2. **Exclusions** (2026-11-22). Wang 2018, Bhat 2015 and Puri 2017 are excluded entirely. Their reasons are in the register.
+2. **Wang 2018, Bhat 2015 and Puri 2017 are visible but not pooled** (2026-11-22, revised). Their reasons are in the register.
 3. **Pubertal scales** (2026-11-22). Genital stage, pubic-hair stage and testis-volume class are pooled and reported separately and never mapped onto one another. The G reference is labelled single-study. Rows with a measurement concern are not pooled by stage.
 4. **Headline** (2026-11-22). When puberty data are entered, the calculator shows both the age z-score and the best-supported puberty z-score.
 5. **Population layer** (2026-11-22). Region is optional and secondary: it is where a study was done, not ancestry.
@@ -41,7 +41,8 @@ Do not reopen these.
 
 The agent raises these; it does not settle them.
 
-- **Measurement-concern rows.** In P1's primary analysis they are **included** (excluded only in sensitivity). In the calculator they are **never pooled**. P6 must pick one primary rule and use the other as a sensitivity analysis.
+- **Measurement-concern rows.** In P1's primary analysis they are **included** (excluded only in sensitivity). In the calculator they are **never pooled**. P6 must pick one primary rule and use the other as a sensitivity analysis. **Proposed rule (M1):** exclude documented concerns from the primary analysis, keep unreported technique, and run three sensitivity analyses. The full text and rationale are in `review/README.md`.
+- **Human dual review.** The blinded pack is in `review/`: 2,835 screening records, 67 studies to curate, 228 extracted rows and 9 methods decisions. Run `reconcile.py` when both copies are done.
 - **Review of curation rules.** 41 of the 53 register entries are AI-proposed and await author review. For the paper they need two independent reviewers.
 - **Registration.** Either register in PROSPERO retrospectively, or declare the review unregistered.
 - **Population analysis.** Choose a pre-specified subgroup or meta-regression plan for region, and the minimum number of studies needed to report a region.
